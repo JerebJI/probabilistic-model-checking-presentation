@@ -7,6 +7,8 @@
 *.fdb_latexmk
 *.synctex.gz
 *.synctex(busy)
+*.nav
+*.snm
 
 # Editor backups
 *~
