@@ -1,13 +1,17 @@
-\documentclass{beamer}
+\documentclass[dvipsnames]{beamer}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+
 \usetheme{metropolis}
 
+\author{Tomaž Jonatan Leonardis, Janez Ignacij Jereb, Sonja Šuković, Vanja Stojanović, Martin Žust}
+\date{}
+\title{Probabilistic model checking}
+
 \begin{document}
-\begin{frame}
-    \title{Probabilistic model checking}
-    \author{Tomaž Jonatan Leonardis, Janez Ignacij Jereb, Jožef Ilija, Sonja Šuković, Vanja Stojanović, Martin Žust}
-    \date{}
-    \maketitle
-\end{frame}
+
+\maketitle
 
 \begin{frame}{Motivation}
     We want to model a probabilistic system and check its properties.
@@ -26,43 +30,139 @@
     \end{itemize}
 \end{frame}
 
-\begin{frame}{How do we model a probabilistic system?}
+\begin{frame}{How do you model a probabilistic system?}
     \begin{enumerate}
         \item describe states and transitions
         \item make number of state finite by abstraction
-        \item we assign probabilities to transitions
+        \item assign probabilities to transitions
     \end{enumerate}
 \end{frame}
 
 \begin{frame}{Modeling customers on a shopping website}
-    % diagram with infinite states
+    \begin{figure}
+        \includegraphics[width=\textwidth]{Images/mimovrste_32.png}
+    \end{figure}
 \end{frame}
 
-\begin{frame}{Modeling customer on a shopping website}
-    % diagram with finite states
+\begin{frame}{Modeling customers on a shopping website}
+
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[arrow/.style={->, thick}]
+
+                \tikzset{block/.style={draw, rectangle, rounded corners, align=center,  minimum width=1.7cm, minimum height=0.7cm}}
+
+                % Nodes
+                \node[block] (needs_met)  at (0,2) {Needs met};
+                \node[block] (needs_not_met) at (0,0) {Needs not met};
+                \node[block] (competitor) at (0,-2) {Competitor};
+
+                \node[block] (browse_view) at (2.8,0) {Browsing};
+                \node[block] (product_view) at (5.6,0) {Product view};
+                \node[block] (checkout) at (8.4,0) {Checkout};
+
+                % Arrows
+                \draw[arrow] (needs_met.north) to [in=180, out=90, looseness=3] (needs_met.west);
+                \draw[arrow] (needs_met) -- (needs_not_met);
+                \draw[arrow] (needs_not_met) -- (competitor);
+                \draw[arrow] (needs_not_met) -- (browse_view);
+                \draw[arrow] (browse_view) -- (product_view);
+                \draw[arrow] (product_view) -- (checkout);
+                \draw[arrow] (checkout.north) to [bend right=15] (needs_met);
+                \draw[arrow] (checkout.south) to [bend left=15] (competitor);
+                \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west);
+                \draw[arrow] (browse_view) -- (competitor);
+                \draw[arrow] (product_view) -- (competitor);
+            \end{tikzpicture}}
+    \end{figure}
 \end{frame}
 
-\begin{frame}{Modeling customer on a shopping website}
-    % diagram with probabilities
+\begin{frame}{Modeling customers on a shopping website}
+
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[arrow/.style={->, thick}]
+
+                \tikzset{block/.style={draw, rectangle, rounded corners, align=center,  minimum width=1.7cm, minimum height=0.7cm}}
+
+                % Nodes
+                \node[block] (needs_met)  at (0,2) {Needs met};
+                \node[block] (needs_not_met) at (0,0) {Needs not met};
+                \node[block] (competitor) at (0,-2) {Competitor};
+
+                \node[block] (browse_view) at (3.2,0) {Browsing};
+                \node[block] (product_view) at (6.2,0) {Product view};
+                \node[block] (checkout) at (9.2,0) {Checkout};
+
+                % Arrows
+                \draw[arrow] (needs_met.north) node[above, fill=bg, yshift=4pt, xshift=-15pt] {0.5} to [in=180, out=90, looseness=3] (needs_met.west);
+                \draw[arrow] (needs_met) -- (needs_not_met) node[midway, fill=bg] {0.5};
+                \draw[arrow] (needs_not_met) -- (competitor) node[midway, fill=bg] {0.4};
+                \draw[arrow] (needs_not_met) -- (browse_view) node[midway, above, fill=bg] {0.6};
+                \draw[arrow] (browse_view) -- (product_view) node[midway, above, fill=bg] {0.7};
+                \draw[arrow] (browse_view) -- (competitor) node[midway, fill=bg, shape=circle] {0.3};
+                \draw[arrow] (product_view) -- (checkout) node[midway, above, fill=bg] {0.7};
+                \draw[arrow] (product_view) -- (competitor) node[midway, fill=bg, shape=circle] {0.3};
+                \draw[arrow] (checkout.north) node[above, fill=bg, yshift=8pt, xshift=-45pt, shape=circle] {0.6} to [bend right=15] (needs_met);
+                \draw[arrow] (checkout.south) node[below, fill=bg, shape=circle, yshift=-8pt, xshift=-45pt] {0.4} to [bend left=15] (competitor);
+                \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west) node[midway, above, fill=bg, shape=circle, xshift=-60pt, yshift=-13pt] {1.0};
+            \end{tikzpicture}}
+    \end{figure}
 \end{frame}
 
-\begin{frame}{Modeling customer on a shopping website}
-    % formalization of the model with functions
+\begin{frame}{Formalize the model}
+    \begin{itemize}
+        \item \textbf{Set of states} $$S = \{\text{Needs\_met}, \text{Needs\_not\_met}, \text{Competitor}, \:\dots\}$$
+        \item \textbf{Initial state} $$s_\text{start} = \text{Needs\_met}$$
+        \item \textbf{Transition probability matrix} \\[0.5em]
+              \hspace{2em} $P : S \times S \rightarrow [0,1]$ \\
+              \hspace{2em} where $\sum_{s' \in S} P(s,s') = 1$ for all $s \in S$
+
+    \end{itemize}
 \end{frame}
 
-\begin{frame}{Modeling customer on a shopping website}
-    % formalization of the model with vectors & matrices
+\begin{frame}{Formalize the model}
+
+    \[
+        \begin{array}{c@{\;}c}
+            % Row labels
+            \begin{array}{c}
+                \\[-0.3em]
+                \text{Needs\_met}      \\
+                \text{Needs\_not\_met} \\
+                \vdots
+            \end{array}
+             &
+            % Column labels + matrix
+            \begin{array}{c}
+                \text{Needs\_met} \hspace{3em} \text{Needs\_not\_met} \cdots
+                \\[0.3em]
+                \left(
+                \begin{array}{cccc}
+                        \hspace{2em} 0.5 \hspace{4em}      & 0.5 \hspace{4em} & \cdots \\
+                        \hspace{2em} 0 \hspace{4em}        & 0 \hspace{4em}   & \cdots \\
+                        \hspace{2em} 1.0      \hspace{4em} & 0 \hspace{4em}   & \cdots \\
+                        \vdots   \hspace{2em}             & \vdots   \hspace{4em}         & \ddots
+                    \end{array}
+                \right)
+            \end{array}
+        \end{array}
+    \]
 \end{frame}
 
-\begin{frame}{Discrete-time Markov chains}
-    % general definition of a DTMC
+\begin{frame}{Additional features?}
+    \begin{itemize}
+        \item Discrete vs continuous time
+        \item Nondeterminism
+        \item Rewards
+        \item Intervals
+        \item ...
+    \end{itemize}
 \end{frame}
 
-\begin{frame}{Markov chains}
-    % general definition of a Markov chain
-\end{frame}
-
-\begin{frame}{The Myriad of Models}
+\begin{frame}{The Many Kinds of Models}
     \begin{itemize}
         \item Discrete-time Markov chains
         \item Continuous-time Markov chains
@@ -73,54 +173,1489 @@
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Differences between models?}
-    Features:
-    \begin{itemize}
-        \item Discrete vs continuous time
-        \item Nondeterminism
-        \item Rewards
-        \item intervals
-        \item ...
-    \end{itemize}
-\end{frame}
+\begin{frame}{Continuous vs Discrete time}
+    \begin{tikzpicture}
 
-\begin{frame}{Continuous vs Discrete}
+        % ======================
+        % DTMC (with grid)
+        % ======================
+        \node at (5,4.5) {\textbf{Discrete-Time (DTMC)}};
+
+        % Grid
+        \draw[step=1cm, gray!40, thin] (0,3) grid (9,4);
+
+        % Time axis
+        \draw[->, thick] (0,3) -- (9.5,3) node[right] {$t$};
+
+        % Points and labels
+        \foreach \x in {0,1,...,9}
+            {
+                \fill (\x,3.5) circle (2pt);
+                \node[below] at (\x,3) {$\x$};
+            }
+
+        % ======================
+        % CTMC (no grid)
+        % ======================
+        \node at (5,1) {\textbf{Continuous-Time (CTMC)}};
+
+        % Time axis
+        \draw[->, thick] (0,0) -- (9.5,0) node[right] {$t$};
+
+        % Irregular jump times
+        \foreach \x/\label in {0/0,0.5/t_1,2.8/t_2,5.5/t_3,7.1/t_4,9/t_5}
+            {
+                \fill (\x,0.5) circle (2pt);
+                \node[below] at (\x,0) {$\label$};
+            }
+
+    \end{tikzpicture}
 \end{frame}
 
 \begin{frame}{Continuous-time Markov chains}
-    % a picture of a CTMC
-\end{frame}
 
-\begin{frame}{Continuous-time Markov chains}
-    % intuitions for execution of a CTMC
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[arrow/.style={->, thick}]
+
+                \tikzset{block/.style={draw, rectangle, rounded corners, align=center,  minimum width=1.7cm, minimum height=0.7cm}}
+
+                % Nodes
+                \node[block] (needs_met)  at (0,2) {Needs met};
+                \node[block] (needs_not_met) at (0,0) {Needs not met};
+                \node[block] (competitor) at (0,-2) {Competitor};
+
+                \node[block] (browse_view) at (3.2,0) {Browsing};
+                \node[block] (product_view) at (6.2,0) {Product view};
+                \node[block] (checkout) at (9.2,0) {Checkout};
+
+                % Arrows
+                \draw[arrow] (needs_met.north) node[above, fill=bg, yshift=4pt, xshift=-15pt] {1} to [in=180, out=90, looseness=3] (needs_met.west);
+                \draw[arrow] (needs_met) -- (needs_not_met) node[midway, fill=bg] {1};
+                \draw[arrow] (needs_not_met) -- (competitor) node[midway, fill=bg] {4};
+                \draw[arrow] (needs_not_met) -- (browse_view) node[midway, above, fill=bg] {6};
+                \draw[arrow] (browse_view) -- (product_view) node[midway, above, fill=bg] {7};
+                \draw[arrow] (browse_view) -- (competitor) node[midway, fill=bg, shape=circle] {3};
+                \draw[arrow] (product_view) -- (checkout) node[midway, above, fill=bg] {7};
+                \draw[arrow] (product_view) -- (competitor) node[midway, fill=bg, shape=circle] {3};
+                \draw[arrow] (checkout.north) node[above, fill=bg, yshift=11pt, xshift=-45pt, shape=circle] {6} to [bend right=15] (needs_met);
+                \draw[arrow] (checkout.south) node[below, fill=bg, shape=circle, yshift=-10pt, xshift=-45pt] {4} to [bend left=15] (competitor);
+                \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west) node[midway, above, fill=bg, shape=circle, xshift=-60pt, yshift=-13pt] {1};
+            \end{tikzpicture}}
+    \end{figure}
+    % here also present how simulation works
 \end{frame}
 
 \begin{frame}{Continuous-time Markov chains}
     % formal definition of a CTMC
+    \begin{itemize}
+        \item \textbf{Set of states} $$S = \{\text{Needs\_met}, \text{Needs\_not\_met}, \text{Competitor}, \:\dots\}$$
+        \item \textbf{Initial state} $$s_\text{start} = \text{Needs\_met}$$
+        \item \textbf{Transition rate matrix} \\[0.5em]
+              \hspace{2em} $Q : S \times S \rightarrow [0,\infty)$
+
+    \end{itemize}
 \end{frame}
 
 \begin{frame}{Rewards}
     % a picture of a DTMC with rewards
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[arrow/.style={->, thick}]
+
+                \tikzset{block/.style={draw, rectangle, rounded corners, align=center,  minimum width=1.7cm, minimum height=0.7cm}}
+
+                % Nodes
+                \node[block] (needs_met)  at (0,2) {Needs met};
+                \node[block] (needs_not_met) at (0,0) {Needs not met};
+                \node[block] (competitor) at (0,-2) {Competitor};
+                \node[above, fill=bg, yshift=11pt, xshift=-20pt] at (0,-2) {\textbf{\textcolor{BrickRed}{-20}}};
+                \node[fill=bg, yshift=11pt, xshift=-20pt] at (6,1.65) {\textbf{\textcolor{Green}{+10}}};
+
+                \node[block] (browse_view) at (2.8,0) {Browsing};
+                \node[block] (product_view) at (5.6,0) {Product view};
+                \node[block] (checkout) at (8.4,0) {Checkout};
+
+                % Arrows
+                \draw[arrow] (needs_met.north) to [in=180, out=90, looseness=3] (needs_met.west);
+                \draw[arrow] (needs_met) -- (needs_not_met);
+                \draw[arrow] (needs_not_met) -- (competitor);
+                \draw[arrow] (needs_not_met) -- (browse_view);
+                \draw[arrow] (browse_view) -- (product_view);
+                \draw[arrow] (product_view) -- (checkout);
+                \draw[arrow] (checkout.north) to [bend right=15] (needs_met);
+                \draw[arrow] (checkout.south) to [bend left=15] (competitor);
+                \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west);
+                \draw[arrow] (browse_view) -- (competitor);
+                \draw[arrow] (product_view) -- (competitor);
+            \end{tikzpicture}}
+    \end{figure}
+    % Talk about formalization of rewards
+\end{frame}
+
+\begin{frame}{Rewards}
+    % a picture of a DTMC with rewards
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[arrow/.style={->, thick}]
+
+                \tikzset{block/.style={draw, rectangle, rounded corners, align=center,  minimum width=1.7cm, minimum height=0.7cm}}
+
+                % Nodes
+                \node[block] (needs_met)  at (0,2) {Needs met};
+                \node[block] (needs_not_met) at (0,0) {Needs not met};
+                \node[block] (competitor) at (0,-2) {Competitor};
+                \node[above, fill=bg, yshift=11pt, xshift=-20pt] at (0,-2) {\textbf{\textcolor{BrickRed}{-20}}};
+                \node[block] (bought_ours) at (5.5,2) {Bought ours};
+                \node[above, fill=bg, yshift=11pt, xshift=-20pt] at (5.5,2) {\textbf{\textcolor{Green}{+10}}};
+
+                \node[block] (browse_view) at (2.8,0) {Browsing};
+                \node[block] (product_view) at (5.6,0) {Product view};
+                \node[block] (checkout) at (8.4,0) {Checkout};
+
+                % Arrows
+                \draw[arrow] (needs_met.north) to [in=180, out=90, looseness=3] (needs_met.west);
+                \draw[arrow] (needs_met) -- (needs_not_met);
+                \draw[arrow] (needs_not_met) -- (competitor);
+                \draw[arrow] (needs_not_met) -- (browse_view);
+                \draw[arrow] (browse_view) -- (product_view);
+                \draw[arrow] (product_view) -- (checkout);
+                \draw[arrow] (checkout.north) to [bend right=45] (bought_ours.east);
+                \draw[arrow] (bought_ours) to  (needs_met);
+                \draw[arrow] (checkout.south) to [bend left=15] (competitor);
+                \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west);
+                \draw[arrow] (browse_view) -- (competitor);
+                \draw[arrow] (product_view) -- (competitor);
+            \end{tikzpicture}}
+    \end{figure}
 \end{frame}
 
 \begin{frame}{Nondeterminism}
-    % intuitions for nondeterminism
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[arrow/.style={->, thick}]
+
+                \tikzset{block/.style={draw, rectangle, rounded corners, align=center,  minimum width=1.7cm, minimum height=0.7cm}}
+
+                % Nodes
+                \node[block] (needs_met)  at (-0.5,2) {Needs met};
+                \node[block] (competitor) at (-0.5,-2) {Competitor};
+                \node[block] (product_view) at (3.7,0) {Product view};
+                \node[block] (checkout) at (7.2,0) {Checkout};
+                \node[block] (advertisement) at (0,0) {Advertisement};
+                \node at (-1.8,0.1) {\Large \textbf{$\vdots$}};
+
+                % Arrows
+                \draw[arrow] (needs_met.north) node[above, fill=bg, yshift=4pt, xshift=-15pt] {0.5} to [in=180, out=90, looseness=3] (needs_met.west);
+                \draw[arrow, color=YellowOrange] (product_view) -- (checkout) node[midway, above, fill=bg] {0.7} coordinate[pos=0.4] (e3);
+                \draw[arrow, color=YellowOrange] (product_view) to [bend left=20] coordinate[pos=0.1] (e4) (competitor) node[midway, above, fill=bg, shape=circle, xshift=70pt, yshift=-50pt] {0.3};
+                \draw[arrow, color=CadetBlue] (product_view) -- (competitor) node[midway, fill=bg, shape=circle] {0.3} coordinate[pos=0.2] (e1);
+                \draw[arrow] (checkout.north) node[above, fill=bg, yshift=8pt, xshift=-45pt, shape=circle] {0.6} to [bend right=15] (needs_met);
+                \draw[arrow] (checkout.south) node[below, fill=bg, shape=circle, yshift=-8pt, xshift=-45pt] {0.4} to [bend left=15] (competitor);
+                \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west) node[midway, above, fill=bg, shape=circle, xshift=-73pt, yshift=-13pt] {1.0};
+
+                \draw[arrow, color=CadetBlue] (product_view) -- (advertisement) node[midway, above, fill=bg] {0.7} coordinate[pos=0.2] (e2);
+                \draw[arrow] (advertisement) -- (needs_met) node[midway, fill=bg] {0.7};
+                \draw[arrow] (advertisement) -- (competitor) node[midway, fill=bg] {0.3};
+
+                \draw[thick, color=CadetBlue] (e1) to[bend left=30] (e2);
+                \draw[thick, color=YellowOrange] (e3) to[bend left=40] (e4);
+            \end{tikzpicture}}
+    \end{figure}
 \end{frame}
 
-\begin{frame}{Nondeterminism}
-    % choice between order of probability and nondeterminism
-\end{frame}
-
-\begin{frame}{Nondeterminism}
+\begin{frame}{Formalize nondeterminism}
     % formal definition of a MDP
+    \begin{itemize}
+        \item \textbf{Set of states} $$S = \{\text{Needs\_met}, \text{Advertisement}, \text{Competitor}, \:\dots\}$$
+        \item \textbf{Initial state} $$s_\text{start} = \text{Needs\_met}$$
+        \item \textbf{Transition probability function} \\[0.5em]
+               $T : S \rightarrow 2^{\text{Dist}(S)}$ \\
+                \hspace{2em} $\begin{aligned}T(\text{Product\_view}):=\{&\textcolor{CadetBlue}{\{Advertisement\mapsto 0.7,Competitor\mapsto 0.3\}},\\
+                &\textcolor{YellowOrange}{\{Checkout\mapsto 0.7,Competitor\mapsto 0.3\}}\}\end{aligned}$
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Table of types of models}
+    \begin{tabular}{c|c|c}
+                                  & \textbf{Discrete time} & \textbf{Continuous time} \\
+        \hline
+        \textbf{Deterministic}    & DTMC                   & CTMC                    \\
+        \hline
+        \textbf{Nondeterministic} & MDP                    &                       \\
+    \end{tabular}
 \end{frame}
 
 \begin{frame}{Other features}
     % intervals, etc.
+    Other features include:
+    \begin{itemize}
+        \item uncertainty (IMDP, IDTMC)
+        \item timing (PTA)
+        \item partial observability (POMDP, POPTA)
+        \item game-theoretic models (SMG, TSG, CSG, TPTG)
+    \end{itemize}
 \end{frame}
 
-\begin{frame}{Composition}
-    % if I have enough time...
+\begin{frame}{Simple Parallel Composition}
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[
+                    >=Stealth,
+                    blueNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=blue!20
+                        },
+                    brownNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=brown!30
+                        },
+                    split/.style={
+                            path picture={
+                                    \fill[brown!30]
+                                    (path picture bounding box.south west)
+                                    rectangle
+                                    ([xshift=0pt]path picture bounding box.north);
+                                }
+                        },
+                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                ]
+
+                % ---------------- BLUE CHAIN ----------------
+                \node[blueNode] (t0) at (0,3.5) {$t_0$};
+                \node[blueNode] (t1) at (3,3.5) {$t_1$};
+                \node[blueNode] (t2) at (6,3.5) {$t_2$};
+
+                \draw[->,blue] (t0)
+                to[bend left=20] node[midway, lab] {1} (t1);
+
+                \draw[->,blue] (t1)
+                to[bend left=20] node[midway, lab] {0.5} (t0);
+
+                \draw[->,blue] (t1)
+                -- node[midway, lab] {0.5} (t2);
+
+                \draw[->,blue] (t2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+
+                % ---------------- BROWN CHAIN ----------------
+                \node[brownNode] (s0) at (0,1.5) {$s_0$};
+                \node[brownNode] (s1) at (3,1.5) {$s_1$};
+                \node[brownNode] (s2) at (6,1.5) {$s_2$};
+
+                \draw[->,brown] (s0)
+                to[bend left=20] node[midway, lab] {1} (s1);
+
+                \draw[->,brown] (s1)
+                to[bend left=20] node[midway, lab] {0.5} (s0);
+
+                \draw[->,brown] (s1)
+                -- node[midway, lab] {0.5} (s2);
+
+                \draw[->,brown] (s2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+            \end{tikzpicture}}
+    \end{figure}
+\end{frame}
+
+
+\begin{frame}{Simple Parallel Composition}
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[
+                    >=Stealth,
+                    blueNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=blue!20
+                        },
+                    brownNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=brown!30
+                        },
+                    split/.style={
+                            path picture={
+                                    \fill[brown!30]
+                                    (path picture bounding box.south west)
+                                    rectangle
+                                    ([xshift=0pt]path picture bounding box.north);
+                                }
+                        },
+                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                ]
+
+                % ---------------- TOP CHAIN ----------------
+                \node[blueNode] (t0) at (0,3.5) {$t_0$};
+                \node[blueNode] (t1) at (3,3.5) {$t_1$};
+                \node[blueNode] (t2) at (6,3.5) {$t_2$};
+
+                \draw[->,blue] (t0)
+                to[bend left=20] node[midway, lab] {1} (t1);
+
+                \draw[->,blue] (t1)
+                to[bend left=20] node[midway, lab] {0.5} (t0);
+
+                \draw[->,blue] (t1)
+                -- node[midway, lab] {0.5} (t2);
+
+                \draw[->,blue] (t2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+
+                % ---------------- LEFT CHAIN ----------------
+                \node[brownNode] (s0) at (-2,2) {$s_0$};
+                \node[brownNode] (s1) at (-2,0) {$s_1$};
+                \node[brownNode] (s2) at (-2,-2) {$s_2$};
+
+                \draw[->,brown] (s0)
+                to[bend left=25] node[midway, lab] {1} (s1);
+
+                \draw[->,brown] (s1)
+                to[bend left=25] node[midway, lab] {0.5} (s0);
+
+                \draw[->,brown] (s1)
+                -- node[midway, lab] {0.5} (s2);
+
+                \draw[->,brown] (s2)
+                edge[loop below] node[lab, yshift=-0.5ex] {1} ();
+
+                % ---------------- PRODUCT GRID ----------------
+                \node[blueNode,split] (p00) at (0,2) {$s_0\,t_0$};
+                \node[blueNode,split] (p01) at (3,2) {$s_0\,t_1$};
+                \node[blueNode,split] (p02) at (6,2) {$s_0\,t_2$};
+
+                \node[blueNode,split] (p10) at (0,0) {$s_1\,t_0$};
+                \node[blueNode,split] (p11) at (3,0) {$s_1\,t_1$};
+                \node[blueNode,split] (p12) at (6,0) {$s_1\,t_2$};
+
+                \node[blueNode,split] (p20) at (0,-2) {$s_2\,t_0$};
+                \node[blueNode,split] (p21) at (3,-2) {$s_2\,t_1$};
+                \node[blueNode,split] (p22) at (6,-2) {$s_2\,t_2$};
+
+                % ---------------- HORIZONTAL EDGES ----------------
+                \foreach \r in {0,1,2} {
+
+                        \draw[->,blue] (p\r0)
+                        to[bend left=20] node[midway, lab] {1} (p\r1);
+
+                        \draw[->,blue] (p\r1)
+                        to[bend left=20] node[midway, lab] {0.5} (p\r0);
+
+                        \draw[->,blue] (p\r1)
+                        -- node[midway, lab] {0.5} (p\r2);
+
+                        \draw[->,blue] (p\r2)
+                        edge[loop right] node[lab, xshift=0.5ex] {1} ();
+                    }
+
+                % ---------------- VERTICAL EDGES ----------------
+                \foreach \c in {0,1,2} {
+
+                        \draw[->,brown] (p0\c)
+                        to[bend left=25] node[midway, lab] {1} (p1\c);
+
+                        \draw[->,brown] (p1\c)
+                        to[bend left=25] node[midway, lab] {0.5} (p0\c);
+
+                        \draw[->,brown] (p1\c)
+                        -- node[midway, lab] {0.5} (p2\c);
+
+                        \draw[->,brown] (p2\c)
+                        edge[loop below] node[lab, yshift=-0.5ex] {1} ();
+                    }
+
+            \end{tikzpicture}
+        }    \end{figure}
+\end{frame}
+
+
+\begin{frame}{Simple Parallel Composition - node-edge synchronization}
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[
+                    >=Stealth,
+                    blueNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=blue!20
+                        },
+                    brownNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=brown!30
+                        },
+                    split/.style={
+                            path picture={
+                                    \fill[brown!30]
+                                    (path picture bounding box.south west)
+                                    rectangle
+                                    ([xshift=0pt]path picture bounding box.north);
+                                }
+                        },
+                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                ]
+
+                % ---------------- BLUE CHAIN ----------------
+                \node[blueNode] (t0) at (0,3.5) {$t_0$};
+                \node[blueNode] (t1) at (3,3.5) {$t_1$};
+                \node[blueNode] (t2) at (6,3.5) {$t_2$};
+
+                \draw[->,blue] (t0)
+                to[bend left=20] node[midway, lab] {1} (t1);
+
+                \draw[->,BrickRed!80, line width=1.5pt] (t1)
+                to[bend left=20] node[midway, lab] {0.5} (t0);
+
+                \draw[->,blue] (t1)
+                -- node[midway, lab] {0.5} (t2);
+
+                \draw[->,blue] (t2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+
+                % ---------------- BROWN CHAIN ----------------
+                \node[brownNode] (s0) at (0,1.5) {$s_0$};
+                \node[brownNode] (s1) at (3,1.5) {$s_1$};
+                \node[brownNode, fill=BrickRed!70] (s2) at (6,1.5) {$s_2$};
+
+                \draw[->,brown] (s0)
+                to[bend left=20] node[midway, lab] {1} (s1);
+
+                \draw[->,brown] (s1)
+                to[bend left=20] node[midway, lab] {0.5} (s0);
+
+                \draw[->,brown] (s1)
+                -- node[midway, lab] {0.5} (s2);
+
+                \draw[->,brown] (s2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+            \end{tikzpicture}}
+    \end{figure}
+\end{frame}
+
+
+\begin{frame}{Simple Parallel Composition - node-edge synchronization}
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[
+                    >=Stealth,
+                    blueNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=blue!20
+                        },
+                    brownNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=brown!30
+                        },
+                    split/.style={
+                            path picture={
+                                    \fill[brown!30]
+                                    (path picture bounding box.south west)
+                                    rectangle
+                                    ([xshift=0pt]path picture bounding box.north);
+                                }
+                        },
+                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                ]
+
+                % ---------------- TOP CHAIN ----------------
+                \node[blueNode] (t0) at (0,3.5) {$t_0$};
+                \node[blueNode] (t1) at (3,3.5) {$t_1$};
+                \node[blueNode] (t2) at (6,3.5) {$t_2$};
+
+                \draw[->,blue] (t0)
+                to[bend left=20] node[midway, lab] {1} (t1);
+
+                \draw[->,blue,BrickRed!80, line width=1.5pt] (t1)
+                to[bend left=20] node[midway, lab] {0.5} (t0);
+
+                \draw[->,blue] (t1)
+                -- node[midway, lab] {0.5} (t2);
+
+                \draw[->,blue] (t2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+
+                % ---------------- LEFT CHAIN ----------------
+                \node[brownNode] (s0) at (-2,2) {$s_0$};
+                \node[brownNode] (s1) at (-2,0) {$s_1$};
+                \node[brownNode, fill=BrickRed!70] (s2) at (-2,-2) {$s_2$};
+
+                \draw[->,brown] (s0)
+                to[bend left=25] node[midway, lab] {1} (s1);
+
+                \draw[->,brown] (s1)
+                to[bend left=25] node[midway, lab] {0.5} (s0);
+
+                \draw[->,brown] (s1)
+                -- node[midway, lab] {0.5} (s2);
+
+                \draw[->,brown] (s2)
+                edge[loop below] node[lab, yshift=-0.5ex] {1} ();
+
+                % ---------------- PRODUCT GRID ----------------
+                \node[blueNode,split] (p00) at (0,2) {$s_0\,t_0$};
+                \node[blueNode,split] (p01) at (3,2) {$s_0\,t_1$};
+                \node[blueNode,split] (p02) at (6,2) {$s_0\,t_2$};
+
+                \node[blueNode,split] (p10) at (0,0) {$s_1\,t_0$};
+                \node[blueNode,split] (p11) at (3,0) {$s_1\,t_1$};
+                \node[blueNode,split] (p12) at (6,0) {$s_1\,t_2$};
+
+                \node[blueNode,split] (p20) at (0,-2) {$s_2\,t_0$};
+                \node[blueNode,split] (p21) at (3,-2) {$s_2\,t_1$};
+                \node[blueNode,split] (p22) at (6,-2) {$s_2\,t_2$};
+
+                % ---------------- HORIZONTAL EDGES ----------------
+                \foreach \r in {0,1,2} {
+
+                        \draw[->,blue] (p\r0)
+                        to[bend left=20] node[midway, lab] {1} (p\r1);
+
+                        \draw[->,blue] (p\r1)
+                        -- node[midway, lab] {0.5} (p\r2);
+
+                        \draw[->,blue] (p\r2)
+                        edge[loop right] node[lab, xshift=0.5ex] {1} ();
+                    }
+
+                % ---------------- VERTICAL EDGES ----------------
+                \foreach \c in {0,1,2} {
+
+                        \draw[->,brown] (p0\c)
+                        to[bend left=25] node[midway, lab] {1} (p1\c);
+
+                        \draw[->,brown] (p1\c)
+                        to[bend left=25] node[midway, lab] {0.5} (p0\c);
+
+                        \draw[->,brown] (p1\c)
+                        -- node[midway, lab] {0.5} (p2\c);
+
+                        \draw[->,brown] (p2\c)
+                        edge[loop below] node[lab, yshift=-0.5ex] {1} ();
+                    }
+
+                \draw[->,blue] (p21) to[bend left=20] node[midway, lab] {0.5} (p20);
+            \end{tikzpicture}
+        }    \end{figure}
+\end{frame}
+
+\begin{frame}{Simple Parallel Composition - synchronize on edges}
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[
+                    >=Stealth,
+                    blueNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=blue!20
+                        },
+                    brownNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=brown!30
+                        },
+                    split/.style={
+                            path picture={
+                                    \fill[brown!30]
+                                    (path picture bounding box.south west)
+                                    rectangle
+                                    ([xshift=0pt]path picture bounding box.north);
+                                }
+                        },
+                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                ]
+
+                % ---------------- BLUE CHAIN ----------------
+                \node[blueNode] (t0) at (0,3.5) {$t_0$};
+                \node[blueNode] (t1) at (3,3.5) {$t_1$};
+                \node[blueNode] (t2) at (6,3.5) {$t_2$};
+
+                \draw[->,BrickRed!80, line width=1.5pt] (t0)
+                to[bend left=20] node[midway, lab] {1} (t1);
+
+                \draw[->,blue] (t1)
+                to[bend left=20] node[midway, lab] {0.5} (t0);
+
+                \draw[->,blue] (t1)
+                -- node[midway, lab] {0.5} (t2);
+
+                \draw[->,blue] (t2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+
+                % ---------------- BROWN CHAIN ----------------
+                \node[brownNode] (s0) at (0,1.5) {$s_0$};
+                \node[brownNode] (s1) at (3,1.5) {$s_1$};
+                \node[brownNode] (s2) at (6,1.5) {$s_2$};
+
+                \draw[->,brown] (s0)
+                to[bend left=20] node[midway, lab] {1} (s1);
+
+                \draw[->,brown] (s1)
+                to[bend left=20] node[midway, lab] {0.5} (s0);
+
+                \draw[->,BrickRed!80, line width=1.5pt] (s1)
+                -- node[midway, lab] {0.5} (s2);
+
+                \draw[->,brown] (s2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+            \end{tikzpicture}}
+    \end{figure}
+\end{frame}
+
+
+\begin{frame}{Simple Parallel Composition - synchronize on edges}
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[
+                    >=Stealth,
+                    blueNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=blue!20
+                        },
+                    brownNode/.style={
+                            circle,
+                            minimum size=10mm,
+                            inner sep=0pt,
+                            draw=none,
+                            fill=brown!30
+                        },
+                    split/.style={
+                            path picture={
+                                    \fill[brown!30]
+                                    (path picture bounding box.south west)
+                                    rectangle
+                                    ([xshift=0pt]path picture bounding box.north);
+                                }
+                        },
+                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                ]
+
+                % ---------------- TOP CHAIN ----------------
+                \node[blueNode] (t0) at (0,3.5) {$t_0$};
+                \node[blueNode] (t1) at (3,3.5) {$t_1$};
+                \node[blueNode] (t2) at (6,3.5) {$t_2$};
+
+                \draw[->,BrickRed!80, line width=1.5pt] (t0)
+                to[bend left=20] node[midway, lab] {1} (t1);
+
+                \draw[->,blue] (t1)
+                to[bend left=20] node[midway, lab] {0.5} (t0);
+
+                \draw[->,blue] (t1)
+                -- node[midway, lab] {0.5} (t2);
+
+                \draw[->,blue] (t2)
+                edge[loop right] node[lab, xshift=0.5ex] {1} ();
+
+                % ---------------- LEFT CHAIN ----------------
+                \node[brownNode] (s0) at (-2,2) {$s_0$};
+                \node[brownNode] (s1) at (-2,0) {$s_1$};
+                \node[brownNode] (s2) at (-2,-2) {$s_2$};
+
+                \draw[->,brown] (s0)
+                to[bend left=25] node[midway, lab] {1} (s1);
+
+                \draw[->,brown] (s1)
+                to[bend left=25] node[midway, lab] {0.5} (s0);
+
+                \draw[->,BrickRed!80, line width=1.5pt] (s1)
+                -- node[midway, lab] {0.5} (s2);
+
+                \draw[->,brown] (s2)
+                edge[loop below] node[lab, yshift=-0.5ex] {1} ();
+
+                % ---------------- PRODUCT GRID ----------------
+                \node[blueNode,split] (p00) at (0,2) {$s_0\,t_0$};
+                \node[blueNode,split] (p01) at (3,2) {$s_0\,t_1$};
+                \node[blueNode,split] (p02) at (6,2) {$s_0\,t_2$};
+
+                \node[blueNode,split] (p10) at (0,0) {$s_1\,t_0$};
+                \node[blueNode,split] (p11) at (3,0) {$s_1\,t_1$};
+                \node[blueNode,split] (p12) at (6,0) {$s_1\,t_2$};
+
+                \node[blueNode,split] (p20) at (0,-2) {$s_2\,t_0$};
+                \node[blueNode,split] (p21) at (3,-2) {$s_2\,t_1$};
+                \node[blueNode,split] (p22) at (6,-2) {$s_2\,t_2$};
+
+                % ---------------- HORIZONTAL EDGES ----------------
+                \foreach \r in {0,1,2} {
+
+                        \draw[->,blue] (p\r1)
+                        to[bend left=20] node[midway, lab] {0.5} (p\r0);
+
+                        \draw[->,blue] (p\r1)
+                        -- node[midway, lab] {0.5} (p\r2);
+
+                        \draw[->,blue] (p\r2)
+                        edge[loop right] node[lab, xshift=0.5ex] {1} ();
+                    }
+
+                % ---------------- VERTICAL EDGES ----------------
+                \foreach \c in {0,1,2} {
+
+                        \draw[->,brown] (p0\c)
+                        to[bend left=25] node[midway, lab] {1} (p1\c);
+
+                        \draw[->,brown] (p1\c)
+                        to[bend left=25] node[midway, lab] {0.5} (p0\c);
+
+                        \draw[->,brown] (p2\c)
+                        edge[loop below] node[lab, yshift=-0.5ex] {1} ();
+                    }
+
+                \draw[->,black, line width=1pt] (p10)
+                -- node[midway, lab] {0.5} (p21);
+
+            \end{tikzpicture}
+        }    \end{figure}
+\end{frame}
+
+\begin{frame}{CTL vs PCTL}
+    \textcolor{lightgray}{CTL - Computation Tree Logic }\\
+    PCTL - \textbf{Probabilistic} Computation Tree Logic\\
+    \begin{tabular}{lp{30mm}p{30mm}}
+        addition: probabilistic operator $P$
+    \end{tabular}
+\end{frame}
+\begin{frame}{CTL vs PCTL - definitions}
+    \begin{itemize}
+        \item State formulae:
+              \begin{itemize}
+                  \item[] \textcolor{lightgray}{$\phi ::= \text{true} \mid a \mid \phi \land \phi \mid \neg \phi \mid \forall\,\psi \mid \exists,\psi$}
+                  \item[]
+                      $\phi ::= \text{true} \mid a \mid \phi \land \phi \mid \neg \phi \mid P_{\sim p}[\psi]$,
+                  \item[] where $a$ is an atomic proposition,
+                      $p \in [0,1]$ is a probability bound,
+                      $\sim \in \{<,>,\leq,\geq\}$,
+                      $k \in \mathbb{N}$
+              \end{itemize}
+
+        \item Path formulae:
+              \begin{itemize}
+                  \item[] \textcolor{lightgray}{$\psi ::= X\,\phi \mid F\,\phi \mid G\,\phi \mid \phi \, U \, \phi$}
+                  \item[] \textcolor{lightgray}{where $X$ means "next", $G$ means "globally", and $U$ means "until"}
+                  \item[]
+                      $\psi ::= X\,\phi
+                          \;\mid\;
+                          \phi\, U^{\leq k}\, \phi
+                          \;\mid\;
+                          \phi\, U\, \phi$,\\
+
+                  \item[] where $X$ means "next", $U$ means "until", and $U^{\leq k}$ means "bounded until"\\
+                      \hfill {(path formulae only occur inside the P operator)}
+
+              \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{CTL vs PCTL - semantics of state formulae}
+    \begin{itemize}
+
+        \item[] $s \models \phi$ denotes ``$s$ satisfies $\phi$'' or ``$\phi$ is true in $s$''
+
+            \vspace{1em}
+
+        \item[] For a state $s$ of an LTS $(S,s_{\text{init}},\rightarrow,L)$:
+            \begin{align*}
+                s \models \text{true}
+                 & \qquad \text{always}                                                                          \\[0.5em]
+                s \models a
+                 & \iff a \in L(s)                                                                               \\[0.5em]
+                s \models \phi_1 \land \phi_2
+                 & \iff s \models \phi_1 \text{ and } s \models \phi_2                                           \\[0.5em]
+                s \models \neg \phi
+                 & \iff s \not\models \phi                                                                       \\[0.5em]
+                \textcolor{lightgray}{s \models \forall \psi}
+                 & \textcolor{lightgray}{\iff \omega \models \psi \text{ for all } \omega \in \mathrm{Path}(s)}  \\[0.5em]
+                \textcolor{lightgray}{s \models \exists \psi}
+                 & \textcolor{lightgray}{\iff \omega \models \psi \text{ for some } \omega \in \mathrm{Path}(s)}
+            \end{align*}
+    \end{itemize}
+    \text{(we will mention operators $\forall$ and $\exists$ in PCTL later)}
+\end{frame}
+\begin{frame}{CTL vs PCTL - semantics of path formulae}
+
+    \begin{itemize}
+        \item[] $\omega \models \psi$ denotes ``$\omega$ satisfies $\psi$'' or ``$\psi$ is true along $\omega$''
+            \vspace{1em}
+
+        \item[] For a path $\omega$ of an LTS $(S,s_{\text{init}},\rightarrow,L)$:
+            \begin{align*}
+                \omega \models X\,\phi
+                 & \iff \omega(1) \models \phi                                                        \\[0.5em]
+                \textcolor{lightgray}{\omega \models F\,\phi}
+                 & \textcolor{lightgray}{\iff \exists k \geq 0 \text{ s.t. } \omega(k) \models \phi } \\[0.5em]
+                \textcolor{lightgray}{\omega \models G\,\phi}
+                 & \textcolor{lightgray}{\iff \forall i \geq 0 \; \omega(i) \models \phi }            \\[0.5em]
+                \omega \models \phi_1 \, U \, \phi_2
+                 & \iff \exists k \geq 0 \text{ s.t. } \omega(k) \models \phi_2                       \\
+                 & \qquad \text{and } \forall i < k \; \omega(i) \models \phi_1                       \\
+                \omega \models \phi_1 \, U^{\leq k} \, \phi_2
+                 & \;\iff\;
+                \exists i \leq k \text{ such that } \omega(i) \models \phi_2                          \\
+                 & \qquad \text{and } j < i,\; \omega(j) \models \phi_1
+            \end{align*}
+
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}{PCTL - semantics of the probability operator}
+
+    \begin{itemize}
+
+        \item[] Notation:
+            \[
+                s \models P_{\sim p}[\psi]
+            \]
+            means that the probability, from state $s$, that $\psi$ is true for an outgoing path satisfies $\sim p$.
+
+            \vspace{1em}
+
+        \item[] Example:
+            \[
+                s \models P_{<0.15}[X\ \text{succ}]
+            \]
+            $\iff$
+            ``the probability of succeed in the next state of outgoing paths from $s$ is less than $0.15$''
+
+        \item[] formally:
+            \[
+                s \models P_{\sim p}[\psi]
+                \iff
+                {\mathrm{Prob}(s,\psi)\sim p}
+            \]
+        \item[] where:
+            \[
+                {\mathrm{Prob}(s,\psi)}
+                =
+                \Pr_s \left\{
+                \omega \in \mathrm{Path}(s)
+                \mid
+                \omega \models \psi
+                \right\}
+            \]
+
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}{PCTL - basic logical equivalences}
+
+    \begin{itemize}
+        \item[] False:
+            \[
+                \text{false} \equiv \neg \text{true}
+            \]
+
+        \item[] Disjunction:
+            \[
+                \phi_1 \lor \phi_2
+                \equiv
+                \neg(\neg \phi_1 \land \neg \phi_2)
+            \]
+
+        \item[] Implication:
+            \[
+                \phi_1 \rightarrow \phi_2
+                \equiv
+                \neg \phi_1 \lor \phi_2
+            \]
+        \item[] Negation example:
+            \[
+                \neg P_{>p}[\phi_1 \ U \ \phi_2]
+                \equiv
+                P_{\leq p}[\phi_1 \ U \ \phi_2]
+            \]
+
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}{PCTL - examples}
+
+    \begin{itemize}
+        \item "The probability that the sender has received $n$ acknowledgements within $k$ clock--ticks is at least $0.8$":
+              \[
+                  P_{\geq 0.8}\left[
+                      F^{\leq k}\ \texttt{reply\_count}=n
+                      \right]
+              \]
+
+        \item "The probability that component B fails before component A is less than $0.4$"
+              \[
+                  P_{<0.4}\left[
+                      \neg \texttt{fail}_A \ U \ \texttt{fail}_B
+                      \right]
+              \]
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}{PCTL - operators $\forall$ and $\exists$}
+    We use $P$ operator to define $\forall$ and $\exists$.
+    \begin{itemize}
+        \item
+              \textbf{Qualitative}
+              PCTL properties
+
+              \begin{itemize}
+                  \item[]
+                      $
+                          P_{\sim p}[\psi],
+                      $
+                      where $p$ is either $0$ or $1$.
+              \end{itemize}
+
+        \item
+              \textbf{Quantitative}
+              PCTL properties
+
+              \begin{itemize}
+                  \item[]
+                      $
+                          P_{\sim p}[\psi],
+                      $
+                      where $p$ is in the range $(0,1)$.
+              \end{itemize}
+
+              \vspace{1em}
+              $\implies$
+              \begin{itemize}
+                  \item[]
+                      {
+                      $P_{>0}[F\ \phi]$
+                      }
+                      is identical to
+                      $\exists F\ \phi$
+
+                      \begin{itemize}
+                          \item[]
+                              there exists a finite path to a $\phi$--state
+                      \end{itemize}
+
+                  \item[]
+                      {
+                      $P_{\geq 1}[F\ \phi]$
+                      }
+                      is (similar to but) weaker than
+                      $\forall F\ \phi$
+
+                      \begin{itemize}
+                          \item[]
+                              a $\phi$--state is reached ``almost surely''
+                      \end{itemize}
+              \end{itemize}
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}{PCTL - limitations}
+
+    \begin{itemize}
+
+        \item[]
+            PCTL is very useful for specifying
+            \textbf{probabilistic reachability} properties
+
+            \begin{itemize}
+                \item[$-$]
+                    e.g.\ ``what is the probability of eventually reaching
+                    a failure/success state?''
+                \item[$-$]
+                    most PCTL properties are variations of:
+                    \[
+                        \phi \ U \ \psi
+                    \]
+                    meaning:
+                    ``stay in $\phi$ states until reaching a $\psi$ state''
+            \end{itemize}
+
+        \item[]
+            Therefore, PCTL mainly reasons about:
+
+            \begin{itemize}
+                \item[$-$]
+                    reaching target states
+                \item[$-$]
+                    staying within allowed states beforehand
+                \item[$-$]
+                    probabilities of these events
+                \item[$-$]
+                    possibly within bounded time
+            \end{itemize}
+
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}{PCTL - limitations}
+
+    \begin{itemize}
+        \item[]
+            However, PCTL has limited expressivity
+
+            \begin{itemize}
+                \item[$-$]
+                    difficult to express complex long--term behaviours
+                \item[$-$]
+                    e.g.\ ``every request is eventually acknowledged''
+                \item[$-$]
+                    e.g.\ ``event $A$ happens infinitely often''
+            \end{itemize}
+
+        \item[]
+            More expressive temporal logics include:
+
+            \begin{itemize}
+                % \item[$-$]
+                %     LTL (Linear Temporal Logic)
+                %     for richer path behaviours
+
+                \item[$-$]
+                    PCTL$^{*}$,
+                    which combines probabilities with richer temporal reasoning
+            \end{itemize}
+
+    \end{itemize}
+
+\end{frame}
+
+
+%------------------------------------------------
+
+% Probabilistic model checking applications
+
+%------------------------------------------------
+
+\begin{frame}{PRISM: The Foundational Model Checker}
+\textbf{PRISM} model checker, primarily developed at the University of Oxford,
+is the most widely used tool in the field that supports various types of models, including:
+\begin{itemize}
+    \item Discrete-Time Markov Chains (DTMCs)
+    \item Markov Decision Processes (MDPs)  
+    \item Continuous-Time Markov Chains (CTMCs)
+    \item Probabilistic Timed Automata (PTAs)
+\end{itemize}
+\end{frame}
+\begin{frame}
+    Its primary strength lies in its use of symbolic data structures,
+    specifically Binary Decision Diagrams (BDDs) and Multi-Terminal Binary
+    Decision Diagrams (MTBDDs).
+    These structures allow PRISM to represent and analyze models
+    with billions of states by exploiting the structural regularity 
+    of the system.
+\end{frame}
+
+\begin{frame}
+    PRISM includes several analysis engines:
+    \begin{itemize}
+        \item Symbolic Engine: Uses MTBDDs for both representation and numerical solution.
+        \item  Explicit Engine: Uses sparse matrices and is often faster for models with less regularity.
+        \item Hybrid Engine: Combines the memory efficiency of MTBDDs with the speed of sparse matrices.
+        \item Simulator: Supports Statistical Model Checking (SMC), which uses Monte Carlo simulation
+        to estimate probabilities when the state space is too large for exhaustive analysis.
+    \end{itemize}
+
+    PRISM-games extends its capabilities to stochastic multi-player games (systems with multiple agents)
+\end{frame}
+
+\begin{frame}{Diverse Application Domains}
+    The versatility of probabilistic model checking has led to its adoption across
+     a wide range of application domains, including:
+    \begin{itemize}
+        \item Randomised distributed algorithms
+        \item Communication protocols and networks
+        \item Computer security
+        \item Autonomous systems and robotics
+        \item Safety-critical systems
+        \item Biology and human behavior
+        \item AI and self-adaptive systems 
+        \item Many more...
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+In the next few slides, we will briefly explore
+some of these application areas and the types of questions that probabilistic model
+checking can help answer. So many applications that we cannot cover them all, but we will give you a 
+flavour of the diversity of applications and the types of questions that can be answered.
+
+\end{frame}
+
+\begin{frame}{Reference Paper}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{./Images/Survey Paper.png}
+\end{figure}
+
+\textbf{Probabilistic Model Checking: Applications and Trends}
+
+\tiny{
+Kwiatkowska et al., 2025 \\
+\url{https://arxiv.org/abs/2509.12968}
+}
+
+% Recommended for further reading if you are interested in more details and references to specific
+% papers in each area.
+
+    
+\end{frame}
+
+\begin{frame}{PRISM Case Studies}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{./Images/Prism Case Studies.png}
+\end{figure}
+
+\textbf{PRISM Case Studies}
+\tiny{
+\url{https://www.prismmodelchecker.org/casestudies/index.php}
+}
+\\
+Recommended for further reading if you are interested in more details and references to specific
+papers in each area.
+
+    
+\end{frame}
+
+
+\begin{frame}{Categories of Application-Oriented Publications}
+    % \begin{center}
+    %     \includegraphics[width=\textwidth]{./Images/Categories of application oriented publications.png}
+    % \end{center}
+    %     \column{0.5\textwidth}
+    % \textbf{Description:}
+    
+    % This figure shows the main architecture of the model. 
+    % The system processes input data and produces predictions 
+    % using a multi-stage pipeline.
+
+    % \vspace{1em}
+    % \tiny{Source: Smith et al., 2023}
+    \begin{center}
+    \includegraphics[width=\textwidth]{./Images/Categories of application oriented publications.png}
+    \end{center}
+    % \textbf{Description:}
+    
+    % This figure shows the main architecture of the model. 
+    % The system processes input data and produces predictions 
+    % using a multi-stage pipeline.
+
+    \begin{center}
+            \tiny{Source: Kwiatkowska et al., 2025}
+    \end{center}
+
+
+
+
+\end{frame}
+
+
+%------------------------------------------------
+
+\begin{frame}{Randomised Distributed Algorithms}
+\begin{itemize}
+    \item A fruitful initial area of study for probabilistic model checking
+\end{itemize}
+
+\textbf{Problem:} Symmetry breaking between concurrent 
+processes - establishing correct termination and fairness
+
+
+\begin{itemize}
+\item Leader election
+\item Byzantine agreement
+\item Self-stabilization
+\item Consensus protocols
+\item Fault tolerance
+\end{itemize}
+Generally uses MDPs since they are ideally suited to model the mixture of stochasticity and concurrency,
+sometimes DTMCs are also used.  
+
+Scalability of verification techniques was enhanced with the development of symbolic methods.
+
+% \vspace{0.5cm}
+
+% \uncover<4->{
+% \textbf{Questions:}
+% \begin{itemize}
+% \item Will the system converge?
+% \item How long does it take?
+% \end{itemize}
+% }
+\end{frame}
+
+
+%------------------------------------------------
+
+\begin{frame}{Communication Protocols}
+
+\begin{itemize}
+    \item A natural progression from work on distributed systems
+    \item Often deploy randomness to break symmetry
+    \item In wireless we also model underlying medium's unreliability (message delays or losses)
+\end{itemize}
+
+\textbf{Important examples:}
+\begin{itemize}
+\item Blueooth device discovery (multiple DTMC models with $\geq 10^{10}$ states)
+\item CSMA/CA (Carrier Sense Multiple Access with Collision Avoidance)
+\item FireWire and Zigbee protocols (use of PTAs)
+\end{itemize}
+
+Modern exaples include wireless protocols , vehicular networks and wireless sensor networks
+
+
+% \textbf{Problem:}
+% \begin{itemize}
+% \item Message loss, interference
+% \item Delays and retransmissions
+% \end{itemize}
+% \text{in wireless it is desirable to incorporate
+% stochastic model of the underlying communication medium's
+% unreliability (message delays or losses)}
+% \text{as before both DTMCs and MDPs are useful for modelling }
+% \vspace{0.5cm}
+
+% \uncover<3->{
+% \textbf{We verify:}
+% \begin{itemize}
+% \item Probability of delivery
+% \item Expected transmission time
+% \end{itemize}
+% }
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Security Protocols}
+
+\textbf{Key ideas: }
+\begin{itemize}
+\item Attackers are unpredictable (randomized or adaptive attacks)
+\item Use of randomisation is widespread in security protocols (e.g. key generation)
+\item Need for strong guarantees (e.g. probability of attack success must be very low)
+\end{itemize}
+
+Natural use of MDPs to model the interaction between the system
+and an adversary. $\Rightarrow$ \textbf{Generalized by stochastic games}
+
+% \vspace{0.5cm}
+
+% \uncover<3->{
+% \textbf{We analyze:}
+% \begin{itemize}
+% \item Probability of attack success
+% \item Level of anonymity
+% \end{itemize}
+% }
+
+Trade-off between security and performance (e.g. more randomisation can increase security
+but also increase latency) $\Rightarrow$ The expressivity of probabilistic temporal logics allows us to 
+capture and analyze these trade-offs (e.g. relation between error and transmission cost).
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Biology}
+CTMCs are useful for modeling stochastic dynamics of biological processes:
+
+\begin{itemize}
+\item Cellular processes (protein to protein interactions, gene expression, chemical reactions)
+\item Population dynamics (epidemic disease spreading, population growth)
+\end{itemize}
+
+Questions like: {\textit{ “what is the expected number of molecules of protein X after 5 minutes?” or
+“what is the probability that more than 10\% of the population is infected within
+2 weeks?”}}
+\begin{itemize}
+    \item Various efficient CTMC solution methods but importantly this area has driven
+the development of {\it{statistical model checking}}.
+    \item Can be used to validate hypothesised models and can support {\it{synthetic biology}} (e.g. DNA computing)
+\end{itemize}
+
+
+
+
+
+\end{frame}
+
+
+
+
+%------------------------------------------------
+
+% \begin{frame}{Hardware and operating systems}
+% \begin{itemize}
+% \item Hardware reliability
+% \item Embedded systems
+% \item Operating system scheduling
+% \end{itemize}
+
+% \vspace{0.5cm}
+
+% \end{frame}
+
+
+
+
+% %------------------------------------------------
+
+\begin{frame}{Safety-Critical Systems}
+Used to rigorously quantify the
+likelihood with which high-risk failures or malfunctions could occur
+\begin{itemize}
+ \item Assessment of safety integrity levels (SILs), which specify acceptable
+probabilities or rates of failure
+\item Modelled as DTMCs or CTMSCs (for quantifying failure rates over time)
+\item Safety specifications typically amount to relatively simple PCTL or CSL
+queries
+\end{itemize}
+
+Early exmaple: integration into the failure mode and effects analysis of an airbag system.
+Also used in: 
+\begin{itemize}
+    \item Railway infrastructure (using {\textit{Fault Tree Analysis}})
+    \item Vehicle guidance systems
+    \item Medical (pacemaker design) and aerospace domain (satellite systems and spacecraft design)
+\end{itemize}
+\end{frame}
+
+%------------------------------------------------
+\begin{frame}{Autonomous Systems \& Robotics}
+\begin{itemize}
+    \item Clear trend in recent years
+    \item Robots operate in uncertain environments ( also interaction with other agents) with imperfect 
+    sensors and actuators
+    \item Guarantees of policies (safety and reliability) are crucial
+\end{itemize}
+Common use of LTL to capture complex temporal specifications like: {\textit{“maximise the probability of inspecting all three sensors, in any order,
+ whilst avoiding X”}}.\\
+Often combined with {\it \textbf{ multi-objective model checking}} $\Rightarrow$ allows generation of policies
+that trade-off between several, competing objectives (e.g., battery life vs. mission
+execution time) or analysis of the corresponding Pareto front.
+
+
+\begin{itemize}
+\item Use in AUVs, UAVs, self-driving cars, multi-robot systems
+\item Highlights challenges 
+\end{itemize}
+
+
+\end{frame}
+
+
+%------------------------------------------------
+
+\begin{frame} {Some further application areas}
+\begin{itemize}
+    \item Human behaviour modeling
+    \item Software architectures and self-adaptive systems
+    \item Smart Grids (performance, resilience and security)
+    \item Quantum computing (key distribution algorithms)
+    \item Blockchain and cryptocurrencies
+    \item Business process modeling
+\end{itemize}
+
+\end{frame}
+
+\begin{frame} {Some unconventional examples of applications: Sports tactics}
+\textbf{Looking beyond the past: Analyzing the intrinsic
+playing style of soccer teams}
+
+{\tiny{
+Clijmans, J. et al., 2023 \\
+%\url{hhttps://www.springerprofessional.de/en/looking-beyond-the-past-analyzing-the-intrinsic-playing-style-of/24638806}
+}} 
+ 
+\begin{figure}
+    \centering
+    \includegraphics[width=0.85\textwidth]{./Images/Football.png}
+\end{figure}
+
+\begin{enumerate}
+    \item Learn an MDP model from event stream data 
+    \item Apply probabilistic model checking with LTL to express outcomes of interest
+    \item Use the results to inform tactical decisions
+\end{enumerate}
+\end{frame}
+
+\begin{frame} {Some unconventional examples of applications: Court interactions}
+\textbf{Probabilistic model checking of temporal interaction dynamics
+in the supreme court}
+
+{\tiny{
+Das, S. and Sharma, A., 2023 \\
+%\url{https://arxiv.org/abs/2311.05177}
+}} 
+ 
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\textwidth]{./Images/Supreme court.png}
+\end{figure}
+
+\begin{enumerate}
+    \item Use transcripts for constructing a DTMRM
+    \item Formulate interesting queries over interactions by using PCTL
+    \item Verify queries by using a probabilistic model checker PRISM
+\end{enumerate}
+
+\end{frame}
+
+
+%------------------------------------------------
+
+\begin{frame}{Conclusion}
+
+\begin{itemize}
+\item   Commonalities between different problem domains
+\item   Considerable breadth and diversity to the set of applications
+\item   Ease of rigorous modelling for stochastic systems
+\item  Logical formalism for expressing quantitative properties allows going 
+beyond classical notion of correctness typically used in formal verification
+\item  Continually evolving tools and possible future domains of application 
+\end{itemize}
+
+
 \end{frame}
 
 \end{document}
