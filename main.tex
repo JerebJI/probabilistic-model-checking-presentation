@@ -1,7 +1,9 @@
 \documentclass[dvipsnames]{beamer}
 
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning}
+\usetikzlibrary{arrows.meta, positioning, calc, fit, backgrounds, matrix}
+\usepackage{amsmath}
+\usepackage{booktabs}
 
 \usetheme{metropolis}
 
@@ -1257,6 +1259,318 @@
 
 \end{frame}
 
+%------------------------------------------------
+% PCTL Model Checking Algorithm
+%------------------------------------------------
+
+\begin{frame}{How does PCTL model checking work?}
+
+    Given a DTMC $\mathcal{D} = (S, s_{\text{init}}, \mathbf{P}, L)$
+    and a PCTL formula $\phi$:
+
+    \vspace{1em}
+
+    \textbf{Goal:} compute the \emph{satisfaction set}
+    $\mathrm{Sat}(\phi) = \{s \in S \mid s \models \phi\}$
+
+    \vspace{1em}
+
+    \textbf{Algorithm:} bottom-up on the syntax tree of $\phi$
+    \begin{enumerate}
+        \item Parse $\phi$ into subformulae
+        \item Process from leaves to root:
+              \begin{itemize}
+                  \item Atomic props, $\lnot$, $\land$ \;:\;
+                        same as CTL (set operations)
+                  \item $P_{\sim p}[X\,\phi_1]$ \;:\;
+                        \textbf{matrix--vector multiplication}
+                  \item $P_{\sim p}[\phi_1\, U^{\leq k}\, \phi_2]$ \;:\;
+                        \textbf{iterative} matrix--vector multiplication
+                  \item $P_{\sim p}[\phi_1\, U\, \phi_2]$ \;:\;
+                        \textbf{linear equation system}
+              \end{itemize}
+        \item Check whether $s_{\text{init}} \in \mathrm{Sat}(\phi)$
+    \end{enumerate}
+
+    \vspace{0.5em}
+    \hfill{\scriptsize\textcolor{gray}{[Baier \& Katoen, Ch.~10; Parker, Lecture~5]}}
+\end{frame}
+
+\begin{frame}{PCTL model checking --- Next operator}
+
+    \textbf{Goal:} check $P_{\sim p}[X\,\phi_1]$ for each state $s$.
+
+    \vspace{0.5em}
+    For each state $s$, compute the probability of reaching
+    a $\phi_1$--state in one step:
+    \[
+        \mathrm{Prob}(s, X\,\phi_1)
+        \;=\;
+        \sum_{s' \in \mathrm{Sat}(\phi_1)} \mathbf{P}(s, s')
+    \]
+
+\end{frame}
+
+\begin{frame}{}
+    This is a single \textbf{matrix--vector product}:
+    $\;\vec{x} = \mathbf{P} \cdot \vec{v}$,
+    where $\vec{v}$ is the characteristic vector of $\mathrm{Sat}(\phi_1)$.
+
+    \vspace{0.5em}
+
+    \begin{center}
+        \resizebox{0.85\textwidth}{!}{%
+            \begin{tikzpicture}[
+                    state/.style={circle, draw, minimum size=8mm, font=\small},
+                    arrow/.style={-{Stealth}, thick},
+                    every node/.style={font=\small}
+                ]
+                % States
+                \node[state] (s0) at (0,0) {$s_0$};
+                \node[state, fill=green!20] (s1) at (3,1) {$s_1$};
+                \node[state] (s2) at (3,-1) {$s_2$};
+                \node[state, fill=green!20] (s3) at (6,0) {$s_3$};
+
+                % Transitions from s0
+                \draw[arrow] (s0) -- node[above left] {$0.3$} (s1);
+                \draw[arrow] (s0) -- node[below left] {$0.7$} (s2);
+
+                % Transitions from s1
+                \draw[arrow] (s1) -- node[above right] {$1.0$} (s3);
+
+                % Transitions from s2
+                \draw[arrow] (s2) -- node[below right] {$0.5$} (s3);
+                \draw[arrow] (s2) edge[loop below] node {$0.5$} ();
+
+                % s3 self-loop
+                \draw[arrow] (s3) edge[loop right] node {$1.0$} ();
+
+                % Labels
+                \node[above=2mm of s1, green!50!black, font=\footnotesize] {$\phi_1$};
+                \node[above=2mm of s3, green!50!black, font=\footnotesize] {$\phi_1$};
+
+                % Computation
+                \node[right=12mm of s3, align=left, font=\small] {
+                    $\vec{v} = (0,\, 1,\, 0,\, 1)^T$                        \\[4pt]
+                    $\vec{x} = \mathbf{P}\,\vec{v}$                          \\[4pt]
+                    $x_{s_0} = 0.3 \cdot 1 + 0.7 \cdot 0 = 0.3$             \\[2pt]
+                    \textcolor{gray}{$x_{s_2} = 0.5 \cdot 0 + 0.5 \cdot 1 = 0.5$}
+                };
+            \end{tikzpicture}
+        }
+    \end{center}
+    Then: $s \in \mathrm{Sat}(P_{\sim p}[X\,\phi_1])$
+    iff $x_s \sim p$.
+\end{frame}
+
+\begin{frame}{PCTL model checking --- Bounded until}
+
+    \textbf{Goal:} check $P_{\sim p}[\phi_1 \, U^{\leq k}\, \phi_2]$.
+
+    \vspace{0.5em}
+
+    Compute probability by \textbf{dynamic programming} (backward from step $k$):
+
+    \[
+        x_s^{(t)} =
+        \begin{cases}
+            1 & \text{if } s \models \phi_2                            \\
+            0 & \text{if } s \not\models \phi_1 \text{ or } t = 0     \\
+            \displaystyle\sum_{s' \in S} \mathbf{P}(s,s')\cdot x_{s'}^{(t-1)}
+              & \text{otherwise}
+        \end{cases}
+    \]
+
+\end{frame}
+
+\begin{frame}{}
+        \begin{center}
+        \resizebox{0.9\textwidth}{!}{%
+        \begin{tikzpicture}[
+                box/.style={draw, rounded corners, minimum width=20mm,
+                        minimum height=8mm, font=\small, align=center},
+                arrow/.style={-{Stealth}, thick},
+            ]
+            \node[box] (k) at (0,0) {step $k$};
+            \node[box] (k1) at (3.5,0) {step $k{-}1$};
+            \node[box] (dots) at (7,0) {$\cdots$};
+            \node[box] (z) at (10.5,0) {step $0$};
+
+            \draw[arrow] (k) -- node[above, font=\footnotesize] {$\mathbf{P}\cdot\vec{x}$} (k1);
+            \draw[arrow] (k1) -- node[above, font=\footnotesize] {$\mathbf{P}\cdot\vec{x}$} (dots);
+            \draw[arrow] (dots) -- node[above, font=\footnotesize] {$\mathbf{P}\cdot\vec{x}$} (z);
+
+            \node[below=3mm of k, font=\footnotesize, gray] {initialize};
+            \node[below=3mm of z, font=\footnotesize, gray] {result};
+        \end{tikzpicture}
+        }
+    \end{center}
+
+    $k$ iterations of matrix--vector multiplication.\\
+    Complexity: $\mathcal{O}(k \cdot |S|^2)$
+    \;(or $\mathcal{O}(k \cdot |\text{transitions}|)$ with sparse matrices).
+\end{frame}
+
+\begin{frame}{PCTL model checking --- Unbounded until (the hard case)}
+
+    \textbf{Goal:} check $P_{\sim p}[\phi_1 \, U\, \phi_2]$.
+
+    \vspace{0.5em}
+
+    \textbf{Step 1: Precomputation} (graph analysis, same as CTL):
+
+    \begin{itemize}
+        \item $S^{\text{no}} = \{s \mid \mathrm{Prob}(s,\, \phi_1 U \phi_2) = 0\}$
+              \;---\; $\phi_2$ unreachable via $\phi_1$--states
+        \item $S^{\text{yes}} = \{s \mid \mathrm{Prob}(s,\, \phi_1 U \phi_2) = 1\}$
+              \;---\; reach $\phi_2$ almost surely
+    \end{itemize}
+
+    Both found by \textbf{backward graph search} (BFS/DFS).
+
+    \vspace{0.8em}
+
+    \textbf{Step 2: Solve} a linear equation system for the remaining states
+    $S^{?} = S \setminus (S^{\text{no}} \cup S^{\text{yes}})$:
+
+\end{frame}
+
+\begin{frame}{}
+    \begin{center}
+        \[
+            \boxed{
+                x_s = \sum_{s' \in S} \mathbf{P}(s, s') \cdot x_{s'}
+                \qquad \text{with } x_s = 0 \text{ for } s \in S^{\text{no}},\;\;
+                x_s = 1 \text{ for } s \in S^{\text{yes}}
+            }
+        \]
+    \end{center}
+
+    \vspace{0.5em}
+
+    \textbf{Step 3:} Check $x_s \sim p$ for each state $s$.
+
+    \vspace{0.5em}
+    {\footnotesize
+        Solving methods: Gaussian elimination (exact)
+        or iterative (Jacobi, Gauss--Seidel --- used in PRISM).
+    }
+\end{frame}
+
+\begin{frame}{Unbounded until --- visual example}
+
+    Check: $P_{\geq 0.5}[\phi_1 \, U\, \phi_2]$
+
+    \vspace{0.3em}
+
+    \begin{center}
+        \resizebox{0.95\textwidth}{!}{%
+            \begin{tikzpicture}[
+                    state/.style={circle, draw, minimum size=9mm, font=\small, thick},
+                    yes/.style={state, fill=green!25},
+                    no/.style={state, fill=red!20},
+                    unk/.style={state, fill=yellow!25},
+                    arrow/.style={-{Stealth}, thick},
+                    every node/.style={font=\small},
+                ]
+                % States
+                \node[unk] (s0) at (0,0) {$s_0$};
+                \node[unk] (s1) at (3,0) {$s_1$};
+                \node[yes] (s2) at (6,1) {$s_2$};
+                \node[no]  (s3) at (6,-1) {$s_3$};
+
+                % Labels
+                \node[above=2mm of s0, font=\footnotesize] {$\phi_1$};
+                \node[above=2mm of s1, font=\footnotesize] {$\phi_1$};
+                \node[above=2mm of s2, font=\footnotesize, green!50!black] {$\phi_2$};
+                \node[below=2mm of s3, font=\footnotesize, red!60!black]
+                {$\lnot\phi_1 \land \lnot\phi_2$};
+
+                % Transitions
+                \draw[arrow] (s0) -- node[above] {$0.6$} (s1);
+                \draw[arrow] (s0) edge[loop below] node {$0.4$} ();
+                \draw[arrow] (s1) -- node[above left] {$0.7$} (s2);
+                \draw[arrow] (s1) -- node[below left] {$0.3$} (s3);
+                \draw[arrow] (s2) edge[loop right] node {$1$} ();
+                \draw[arrow] (s3) edge[loop right] node {$1$} ();
+
+                % Annotations on right
+                \node[right=15mm of s2, align=left, font=\small] (ann) {
+                    \textcolor{green!50!black}{$S^{\text{yes}} = \{s_2\}$}
+                    \quad $x_{s_2} = 1$                                     \\[4pt]
+                    \textcolor{red!60!black}{$S^{\text{no}}\; = \{s_3\}$}
+                    \quad $x_{s_3} = 0$                                     \\[6pt]
+                    $S^{?} = \{s_0, s_1\}$:                                 \\[4pt]
+                    $x_{s_1} = 0.7 \cdot 1 + 0.3 \cdot 0 = 0.7$            \\[2pt]
+                    $x_{s_0} = 0.6 \cdot x_{s_1} + 0.4 \cdot x_{s_0}$      \\[2pt]
+                    $\;\;\implies x_{s_0} = 0.7$                            \\[6pt]
+                    $0.7 \geq 0.5\;\; \checkmark$
+                };
+            \end{tikzpicture}
+        }
+    \end{center}
+\end{frame}
+
+\begin{frame}{PCTL model checking --- CTL vs PCTL comparison}
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \resizebox{0.95\textwidth}{!}{%
+        \begin{tabular}{@{}l l l@{}}
+            \toprule
+            \textbf{Aspect}    & \textbf{CTL}            & \textbf{PCTL}                      \\
+            \midrule
+            Path quantifiers   & $\forall$, $\exists$    & $P_{\sim p}$                       \\
+            Core computation   & graph fixpoint (BFS/DFS) & numerical (matrix ops + linear systems) \\
+            Model              & Kripke structure        & DTMC (or MDP)                      \\
+            Result per state   & Boolean                 & probability, then compare against $p$ \\
+            \midrule
+            \multicolumn{3}{l}{\textbf{Complexity:}} \\
+            CTL                & \multicolumn{2}{l}{$\mathcal{O}(|\phi| \cdot (|S| + |R|))$
+                \;---\; graph traversal}                                                      \\
+            PCTL               & \multicolumn{2}{l}{$\mathcal{O}(|\phi| \cdot
+                    (\text{poly}(|S|) + \text{equation solving}))$}                           \\
+            \bottomrule
+        \end{tabular}
+        }
+    \end{center}
+
+    \vspace{1em}
+
+    The shift can be summarized:\\
+    CTL asks ``does this hold on all/some paths?''\\
+    PCTL asks ``does the \textbf{probability} of this holding meet a threshold?''
+
+    \vspace{0.5em}
+    \hfill{\scriptsize\textcolor{gray}{[Baier \& Katoen, \emph{Principles of Model Checking}, 2008]}}
+\end{frame}
+
+\begin{frame}{Extension to MDPs}
+
+    For \textbf{Markov Decision Processes} (nondeterminism + probability):
+
+    \vspace{0.5em}
+
+    \begin{itemize}
+        \item Same PCTL syntax, but semantics must account for
+              \textbf{all possible schedulers} (adversaries)
+
+        \item Model checking computes \textbf{min/max probabilities}:
+              \[
+                  \Pr^{\min}_s(\psi) \quad\text{and}\quad \Pr^{\max}_s(\psi)
+              \]
+
+        \item For unbounded until: solve a \textbf{linear program} (LP)
+              instead of a linear equation system
+
+        \item Key result: \emph{memoryless deterministic} schedulers suffice
+              for reachability properties
+    \end{itemize}
+
+    \vspace{1em}
+
+    \hfill{\scriptsize\textcolor{gray}{[Parker, Lecture~14; Baier \& Katoen, Ch.~10.6]}}
+\end{frame}
 
 %------------------------------------------------
 
@@ -1269,7 +1583,7 @@
 is the most widely used tool in the field that supports various types of models, including:
 \begin{itemize}
     \item Discrete-Time Markov Chains (DTMCs)
-    \item Markov Decision Processes (MDPs)  
+    \item Markov Decision Processes (MDPs)
     \item Continuous-Time Markov Chains (CTMCs)
     \item Probabilistic Timed Automata (PTAs)
 \end{itemize}
@@ -1279,7 +1593,7 @@ is the most widely used tool in the field that supports various types of models,
     specifically Binary Decision Diagrams (BDDs) and Multi-Terminal Binary
     Decision Diagrams (MTBDDs).
     These structures allow PRISM to represent and analyze models
-    with billions of states by exploiting the structural regularity 
+    with billions of states by exploiting the structural regularity
     of the system.
 \end{frame}
 
@@ -1306,7 +1620,7 @@ is the most widely used tool in the field that supports various types of models,
         \item Autonomous systems and robotics
         \item Safety-critical systems
         \item Biology and human behavior
-        \item AI and self-adaptive systems 
+        \item AI and self-adaptive systems
         \item Many more...
     \end{itemize}
 \end{frame}
@@ -1314,7 +1628,7 @@ is the most widely used tool in the field that supports various types of models,
 \begin{frame}
 In the next few slides, we will briefly explore
 some of these application areas and the types of questions that probabilistic model
-checking can help answer. So many applications that we cannot cover them all, but we will give you a 
+checking can help answer. So many applications that we cannot cover them all, but we will give you a
 flavour of the diversity of applications and the types of questions that can be answered.
 
 \end{frame}
@@ -1336,7 +1650,7 @@ Kwiatkowska et al., 2025 \\
 % Recommended for further reading if you are interested in more details and references to specific
 % papers in each area.
 
-    
+
 \end{frame}
 
 \begin{frame}{PRISM Case Studies}
@@ -1354,7 +1668,7 @@ Kwiatkowska et al., 2025 \\
 Recommended for further reading if you are interested in more details and references to specific
 papers in each area.
 
-    
+
 \end{frame}
 
 
@@ -1364,9 +1678,9 @@ papers in each area.
     % \end{center}
     %     \column{0.5\textwidth}
     % \textbf{Description:}
-    
-    % This figure shows the main architecture of the model. 
-    % The system processes input data and produces predictions 
+
+    % This figure shows the main architecture of the model.
+    % The system processes input data and produces predictions
     % using a multi-stage pipeline.
 
     % \vspace{1em}
@@ -1375,9 +1689,9 @@ papers in each area.
     \includegraphics[width=\textwidth]{./Images/Categories of application oriented publications.png}
     \end{center}
     % \textbf{Description:}
-    
-    % This figure shows the main architecture of the model. 
-    % The system processes input data and produces predictions 
+
+    % This figure shows the main architecture of the model.
+    % The system processes input data and produces predictions
     % using a multi-stage pipeline.
 
     \begin{center}
@@ -1397,7 +1711,7 @@ papers in each area.
     \item A fruitful initial area of study for probabilistic model checking
 \end{itemize}
 
-\textbf{Problem:} Symmetry breaking between concurrent 
+\textbf{Problem:} Symmetry breaking between concurrent
 processes - establishing correct termination and fairness
 
 
@@ -1409,7 +1723,7 @@ processes - establishing correct termination and fairness
 \item Fault tolerance
 \end{itemize}
 Generally uses MDPs since they are ideally suited to model the mixture of stochasticity and concurrency,
-sometimes DTMCs are also used.  
+sometimes DTMCs are also used.
 
 Scalability of verification techniques was enhanced with the development of symbolic methods.
 
@@ -1490,7 +1804,7 @@ and an adversary. $\Rightarrow$ \textbf{Generalized by stochastic games}
 % }
 
 Trade-off between security and performance (e.g. more randomisation can increase security
-but also increase latency) $\Rightarrow$ The expressivity of probabilistic temporal logics allows us to 
+but also increase latency) $\Rightarrow$ The expressivity of probabilistic temporal logics allows us to
 capture and analyze these trade-offs (e.g. relation between error and transmission cost).
 \end{frame}
 
@@ -1552,7 +1866,7 @@ queries
 \end{itemize}
 
 Early exmaple: integration into the failure mode and effects analysis of an airbag system.
-Also used in: 
+Also used in:
 \begin{itemize}
     \item Railway infrastructure (using {\textit{Fault Tree Analysis}})
     \item Vehicle guidance systems
@@ -1564,7 +1878,7 @@ Also used in:
 \begin{frame}{Autonomous Systems \& Robotics}
 \begin{itemize}
     \item Clear trend in recent years
-    \item Robots operate in uncertain environments ( also interaction with other agents) with imperfect 
+    \item Robots operate in uncertain environments ( also interaction with other agents) with imperfect
     sensors and actuators
     \item Guarantees of policies (safety and reliability) are crucial
 \end{itemize}
@@ -1577,7 +1891,7 @@ execution time) or analysis of the corresponding Pareto front.
 
 \begin{itemize}
 \item Use in AUVs, UAVs, self-driving cars, multi-robot systems
-\item Highlights challenges 
+\item Highlights challenges
 \end{itemize}
 
 
@@ -1605,15 +1919,15 @@ playing style of soccer teams}
 {\tiny{
 Clijmans, J. et al., 2023 \\
 %\url{hhttps://www.springerprofessional.de/en/looking-beyond-the-past-analyzing-the-intrinsic-playing-style-of/24638806}
-}} 
- 
+}}
+
 \begin{figure}
     \centering
     \includegraphics[width=0.85\textwidth]{./Images/Football.png}
 \end{figure}
 
 \begin{enumerate}
-    \item Learn an MDP model from event stream data 
+    \item Learn an MDP model from event stream data
     \item Apply probabilistic model checking with LTL to express outcomes of interest
     \item Use the results to inform tactical decisions
 \end{enumerate}
@@ -1626,8 +1940,8 @@ in the supreme court}
 {\tiny{
 Das, S. and Sharma, A., 2023 \\
 %\url{https://arxiv.org/abs/2311.05177}
-}} 
- 
+}}
+
 \begin{figure}
     \centering
     \includegraphics[width=0.9\textwidth]{./Images/Supreme court.png}
@@ -1650,9 +1964,9 @@ Das, S. and Sharma, A., 2023 \\
 \item   Commonalities between different problem domains
 \item   Considerable breadth and diversity to the set of applications
 \item   Ease of rigorous modelling for stochastic systems
-\item  Logical formalism for expressing quantitative properties allows going 
+\item  Logical formalism for expressing quantitative properties allows going
 beyond classical notion of correctness typically used in formal verification
-\item  Continually evolving tools and possible future domains of application 
+\item  Continually evolving tools and possible future domains of application
 \end{itemize}
 
 
