@@ -4,6 +4,7 @@
 \usetikzlibrary{arrows.meta, positioning, calc, fit, backgrounds, matrix}
 \usepackage{amsmath}
 \usepackage{booktabs}
+\usepackage{alltt}
 
 \usetheme{metropolis}
 
@@ -1814,8 +1815,8 @@ capture and analyze these trade-offs (e.g. relation between error and transmissi
 CTMCs are useful for modeling stochastic dynamics of biological processes:
 
 \begin{itemize}
-\item Cellular processes (protein to protein interactions, gene expression, chemical reactions)
-\item Population dynamics (epidemic disease spreading, population growth)
+    \item Cellular processes (protein to protein interactions, gene expression, chemical reactions)
+    \item Population dynamics (epidemic disease spreading, population growth)
 \end{itemize}
 
 Questions like: {\textit{ “what is the expected number of molecules of protein X after 5 minutes?” or
@@ -1858,10 +1859,10 @@ the development of {\it{statistical model checking}}.
 Used to rigorously quantify the
 likelihood with which high-risk failures or malfunctions could occur
 \begin{itemize}
- \item Assessment of safety integrity levels (SILs), which specify acceptable
+    \item Assessment of safety integrity levels (SILs), which specify acceptable
 probabilities or rates of failure
-\item Modelled as DTMCs or CTMSCs (for quantifying failure rates over time)
-\item Safety specifications typically amount to relatively simple PCTL or CSL
+    \item Modelled as DTMCs or CTMSCs (for quantifying failure rates over time)
+    \item Safety specifications typically amount to relatively simple PCTL or CSL
 queries
 \end{itemize}
 
@@ -1890,8 +1891,8 @@ execution time) or analysis of the corresponding Pareto front.
 
 
 \begin{itemize}
-\item Use in AUVs, UAVs, self-driving cars, multi-robot systems
-\item Highlights challenges
+    \item Use in AUVs, UAVs, self-driving cars, multi-robot systems
+    \item Highlights challenges
 \end{itemize}
 
 
@@ -1961,15 +1962,121 @@ Das, S. and Sharma, A., 2023 \\
 \begin{frame}{Conclusion}
 
 \begin{itemize}
-\item   Commonalities between different problem domains
-\item   Considerable breadth and diversity to the set of applications
-\item   Ease of rigorous modelling for stochastic systems
-\item  Logical formalism for expressing quantitative properties allows going
+    \item Commonalities between different problem domains
+    \item Considerable breadth and diversity to the set of applications
+    \item Ease of rigorous modelling for stochastic systems
+    \item Logical formalism for expressing quantitative properties allows going
 beyond classical notion of correctness typically used in formal verification
-\item  Continually evolving tools and possible future domains of application
+    \item Continually evolving tools and possible future domains of application
 \end{itemize}
 
 
+\end{frame}
+
+\begin{frame}{PRISM: Practical Demo}
+    We will now walk through two concrete PRISM models:
+    \begin{enumerate}
+        \item A \textbf{DTMC} — message delivery protocol with retries
+        \item An \textbf{MDP} — football club seasonal decisions
+    \end{enumerate}
+    \vspace{1em}
+    For each model we will:
+    \begin{itemize}
+        \item Write the model in the PRISM language
+        \item Specify properties in PCTL
+        \item Interpret the results
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Example 1: Message Delivery Protocol (DTMC)}
+    \textbf{Scenario:} A sender transmits a message that is lost with probability $0.3$.
+    The sender retries up to 3 times.
+
+    \vspace{0.5em}
+
+    \begin{semiverbatim}
+dtmc
+module protokol
+  s       : [0..2] init 0; \textit{// 0=waiting, 1=delivered, 2=failure}
+  retries : [0..3] init 0;
+
+  [] s=0 & retries<3 ->
+       0.7 : (s'=1) + 0.3 : (s'=0) & (retries'=retries+1);
+  [] s=0 & retries=3 -> 1 : (s'=2);
+  [] s=1 -> 1 : (s'=1);
+  [] s=2 -> 1 : (s'=2);
+endmodule
+
+label "delivered" = s=1;
+label "failure"   = s=2;
+    \end{semiverbatim}
+\end{frame}
+
+\begin{frame}{Example 1: Properties and Results}
+    \textbf{PCTL properties we verify:}
+
+    \vspace{0.5em}
+
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Property} & \textbf{Question} & \textbf{Result} \\
+        \midrule
+        \texttt{P=? [ F "delivered" ]}    & Probability of delivery?        & $0.973$ \\
+        \texttt{P=? [ F "failure" ]}      & Probability of total failure?   & $0.027$ \\
+        \texttt{P=? [ F<=1 "delivered" ]} & Delivered on first try?         & $0.7$   \\
+        \texttt{P>=0.95 [ F "delivered"]} & Is reliability above 95\%?      & \texttt{true} \\
+        \bottomrule
+    \end{tabular}
+
+    \vspace{1em}
+
+    Note: \texttt{P=? [ F "failure" ]} $= 0.3^3 = 0.027$ — PRISM computes the
+    \textbf{exact} mathematical value, not a simulation estimate.
+\end{frame}
+
+\begin{frame}[fragile]{Example 2: Football Club (MDP)}
+    \textbf{Scenario:} Each season, the board chooses to \emph{organise a tournament}
+    or \emph{do nothing}. The outcome is still probabilistic.
+
+    \vspace{0.5em}
+
+    \begin{semiverbatim}
+mdp
+module club
+  s : [0..1] init 0; \textit{// 0=struggling, 1=thriving}
+
+  [tournament] s=0 -> 0.6:(s'=1) + 0.4:(s'=0);
+  [tournament] s=1 -> 0.9:(s'=1) + 0.1:(s'=0);
+  [nothing]    s=0 -> 0.2:(s'=1) + 0.8:(s'=0);
+  [nothing]    s=1 -> 0.6:(s'=1) + 0.4:(s'=0);
+endmodule
+
+label "struggling" = s=0;
+label "thriving"   = s=1;
+    \end{semiverbatim}
+\end{frame}
+
+\begin{frame}{Example 2: Properties and Results}
+    In an MDP we ask for \textbf{minimum and maximum} probabilities
+    over all possible policies:
+
+    \vspace{0.5em}
+
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Property} & \textbf{Question} & \textbf{Result} \\
+        \midrule
+        \texttt{Pmax=? [ F "thriving" ]}     & Best achievable probability?        & $1.0$ \\
+        \texttt{Pmin=? [ F "thriving" ]}     & Worst case probability?             & $1.0$ \\
+        \texttt{Pmax=? [ X "thriving" ]}     & Best prob. of thriving next season?  & $0.6$ \\
+        \texttt{Pmax>=0.9 [ F "thriving" ]}  & Can we guarantee 90\%?              & \texttt{true} \\
+        \bottomrule
+    \end{tabular}
+
+    \vspace{1em}
+
+    The computed \textbf{optimal policy}: organise a tournament when struggling,
+    do nothing when thriving — consistent with the analytical result from value iteration.
 \end{frame}
 
 \end{document}
