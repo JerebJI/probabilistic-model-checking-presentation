@@ -1,0 +1,20 @@
+\frametitle{Example 2: Football Club (MDP)}
+\textbf{Scenario:} Each season, the board chooses to \emph{organise a tournament}
+    or \emph{do nothing}. The outcome is still probabilistic.
+
+    \vspace{0.5em}
+
+    \begin{semiverbatim}
+mdp
+module club
+  s : [0..1] init 0; \textit{// 0=struggling, 1=thriving}
+
+  [tournament] s=0 -> 0.6:(s'=1) + 0.4:(s'=0);
+  [tournament] s=1 -> 0.9:(s'=1) + 0.1:(s'=0);
+  [nothing]    s=0 -> 0.2:(s'=1) + 0.8:(s'=0);
+  [nothing]    s=1 -> 0.6:(s'=1) + 0.4:(s'=0);
+endmodule
+
+label "struggling" = s=0;
+label "thriving"   = s=1;
+    \end{semiverbatim}
