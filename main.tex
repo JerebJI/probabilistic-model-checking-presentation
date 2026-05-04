@@ -33,14 +33,6 @@
     \end{itemize}
 \end{frame}
 
-\begin{frame}{How do you model a probabilistic system?}
-    \begin{enumerate}
-        \item describe states and transitions
-        \item make number of state finite by abstraction
-        \item assign probabilities to transitions
-    \end{enumerate}
-\end{frame}
-
 \begin{frame}{Modeling customers on a shopping website}
     \begin{figure}
         \includegraphics[width=\textwidth]{Images/mimovrste_32.png}
@@ -77,6 +69,7 @@
                 \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west);
                 \draw[arrow] (browse_view) -- (competitor);
                 \draw[arrow] (product_view) -- (competitor);
+                \draw[arrow] (0.5,2.7) -- (0.5,2.35);
             \end{tikzpicture}}
     \end{figure}
 \end{frame}
@@ -111,6 +104,7 @@
                 \draw[arrow] (checkout.north) node[above, fill=bg, yshift=8pt, xshift=-45pt, shape=circle] {0.6} to [bend right=15] (needs_met);
                 \draw[arrow] (checkout.south) node[below, fill=bg, shape=circle, yshift=-8pt, xshift=-45pt] {0.4} to [bend left=15] (competitor);
                 \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west) node[midway, above, fill=bg, shape=circle, xshift=-60pt, yshift=-13pt] {1.0};
+                \draw[arrow] (0.5,2.7) -- (0.5,2.35);
             \end{tikzpicture}}
     \end{figure}
 \end{frame}
@@ -144,36 +138,15 @@
                 \\[0.3em]
                 \left(
                 \begin{array}{cccc}
-                        \hspace{2em} 0.5 \hspace{4em}      & 0.5 \hspace{4em} & \cdots \\
-                        \hspace{2em} 0 \hspace{4em}        & 0 \hspace{4em}   & \cdots \\
-                        \hspace{2em} 1.0      \hspace{4em} & 0 \hspace{4em}   & \cdots \\
-                        \vdots   \hspace{2em}             & \vdots   \hspace{4em}         & \ddots
+                        \hspace{2em} 0.5 \hspace{4em}      & 0.5 \hspace{4em}      & \cdots \\
+                        \hspace{2em} 0 \hspace{4em}        & 0 \hspace{4em}        & \cdots \\
+                        \hspace{2em} 1.0      \hspace{4em} & 0 \hspace{4em}        & \cdots \\
+                        \vdots   \hspace{2em}              & \vdots   \hspace{4em} & \ddots
                     \end{array}
                 \right)
             \end{array}
         \end{array}
     \]
-\end{frame}
-
-\begin{frame}{Additional features?}
-    \begin{itemize}
-        \item Discrete vs continuous time
-        \item Nondeterminism
-        \item Rewards
-        \item Intervals
-        \item ...
-    \end{itemize}
-\end{frame}
-
-\begin{frame}{The Many Kinds of Models}
-    \begin{itemize}
-        \item Discrete-time Markov chains
-        \item Continuous-time Markov chains
-        \item Markov decision processes
-        \item Markov automata
-        \item Probabilistic timed automata
-        \item ...
-    \end{itemize}
 \end{frame}
 
 \begin{frame}{Continuous vs Discrete time}
@@ -215,6 +188,41 @@
     \end{tikzpicture}
 \end{frame}
 
+\begin{frame}{Continuous time?}
+
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[arrow/.style={->, thick}]
+
+                \tikzset{block/.style={draw, rectangle, rounded corners, align=center,  minimum width=1.7cm, minimum height=0.7cm}}
+
+                % Nodes
+                \node[block] (needs_met)  at (0,2) {Needs met};
+                \node[block] (needs_not_met) at (0,0) {Needs not met};
+                \node[block] (competitor) at (0,-2) {Competitor};
+
+                \node[block] (browse_view) at (2.8,0) {Browsing};
+                \node[block] (product_view) at (5.6,0) {Product view};
+                \node[block] (checkout) at (8.4,0) {Checkout};
+
+                % Arrows
+                \draw[arrow] (needs_met.north) to [in=180, out=90, looseness=3] (needs_met.west);
+                \draw[arrow] (needs_met) -- (needs_not_met);
+                \draw[arrow] (needs_not_met) -- (competitor);
+                \draw[arrow] (needs_not_met) -- (browse_view);
+                \draw[arrow] (browse_view) -- (product_view);
+                \draw[arrow] (product_view) -- (checkout);
+                \draw[arrow] (checkout.north) to [bend right=15] (needs_met);
+                \draw[arrow] (checkout.south) to [bend left=15] (competitor);
+                \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west);
+                \draw[arrow] (browse_view) -- (competitor);
+                \draw[arrow] (product_view) -- (competitor);
+                \draw[arrow] (0.5,2.7) -- (0.5,2.35);
+            \end{tikzpicture}}
+    \end{figure}
+\end{frame}
+
 \begin{frame}{Continuous-time Markov chains}
 
     \begin{figure}
@@ -245,9 +253,30 @@
                 \draw[arrow] (checkout.north) node[above, fill=bg, yshift=11pt, xshift=-45pt, shape=circle] {6} to [bend right=15] (needs_met);
                 \draw[arrow] (checkout.south) node[below, fill=bg, shape=circle, yshift=-10pt, xshift=-45pt] {4} to [bend left=15] (competitor);
                 \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west) node[midway, above, fill=bg, shape=circle, xshift=-60pt, yshift=-13pt] {1};
+                \draw[arrow] (0.5,2.7) -- (0.5,2.35);
             \end{tikzpicture}}
     \end{figure}
     % here also present how simulation works
+\end{frame}
+
+\begin{frame}{Sampling waiting time}
+    $$
+    \begin{aligned}
+        t_1 &\sim \textrm{Exp}(\lambda_1)\\
+        t_2 &\sim \textrm{Exp}(\lambda_2)\\
+        \min(t_1, t_2) &\sim \textrm{Exp}(\lambda_1 + \lambda_2)\\
+        min(t_{i,0}, t_{i,1}, \dots, t_{i,n}) &\sim \textrm{Exp}(\lambda_{i,0} + \lambda_{i,1} + \dots + \lambda_{i,n})
+    \end{aligned}
+    $$
+\end{frame}
+\begin{frame}{Sampling next state}
+    $$
+    \begin{aligned}
+        P(t_1 < t_2) &= \frac{\lambda_1}{\lambda_1 + \lambda_2}\\
+        P(t_2 < t_1) &= \frac{\lambda_2}{\lambda_1 + \lambda_2}\\
+        P(\min(t_{i,0}, t_{i,1}, \dots, t_{i,n}) = t_{i,j}) &= \frac{\lambda_{i,j}}{\lambda_{i,0} + \lambda_{i,1} + \dots + \lambda_{i,n}}
+    \end{aligned}
+    $$
 \end{frame}
 
 \begin{frame}{Continuous-time Markov chains}
@@ -259,6 +288,41 @@
               \hspace{2em} $Q : S \times S \rightarrow [0,\infty)$
 
     \end{itemize}
+\end{frame}
+
+\begin{frame}{Quantitative properties}
+
+    \begin{figure}
+        \centering
+        \resizebox{\columnwidth}{!}{%
+            \begin{tikzpicture}[arrow/.style={->, thick}]
+
+                \tikzset{block/.style={draw, rectangle, rounded corners, align=center,  minimum width=1.7cm, minimum height=0.7cm}}
+
+                % Nodes
+                \node[block] (needs_met)  at (0,2) {Needs met};
+                \node[block] (needs_not_met) at (0,0) {Needs not met};
+                \node[block] (competitor) at (0,-2) {Competitor};
+
+                \node[block] (browse_view) at (2.8,0) {Browsing};
+                \node[block] (product_view) at (5.6,0) {Product view};
+                \node[block] (checkout) at (8.4,0) {Checkout};
+
+                % Arrows
+                \draw[arrow] (needs_met.north) to [in=180, out=90, looseness=3] (needs_met.west);
+                \draw[arrow] (needs_met) -- (needs_not_met);
+                \draw[arrow] (needs_not_met) -- (competitor);
+                \draw[arrow] (needs_not_met) -- (browse_view);
+                \draw[arrow] (browse_view) -- (product_view);
+                \draw[arrow] (product_view) -- (checkout);
+                \draw[arrow] (checkout.north) to [bend right=15] (needs_met);
+                \draw[arrow] (checkout.south) to [bend left=15] (competitor);
+                \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west);
+                \draw[arrow] (browse_view) -- (competitor);
+                \draw[arrow] (product_view) -- (competitor);
+                \draw[arrow] (0.5,2.7) -- (0.5,2.35);
+            \end{tikzpicture}}
+    \end{figure}
 \end{frame}
 
 \begin{frame}{Rewards}
@@ -293,6 +357,7 @@
                 \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west);
                 \draw[arrow] (browse_view) -- (competitor);
                 \draw[arrow] (product_view) -- (competitor);
+                \draw[arrow] (0.5,2.7) -- (0.5,2.35);
             \end{tikzpicture}}
     \end{figure}
     % Talk about formalization of rewards
@@ -332,6 +397,7 @@
                 \draw[arrow] (competitor.west) to [bend left=70] ([yshift=-6pt] needs_met.west);
                 \draw[arrow] (browse_view) -- (competitor);
                 \draw[arrow] (product_view) -- (competitor);
+                \draw[arrow] (0.5,2.7) -- (0.5,2.35);
             \end{tikzpicture}}
     \end{figure}
 \end{frame}
@@ -351,6 +417,7 @@
                 \node[block] (checkout) at (7.2,0) {Checkout};
                 \node[block] (advertisement) at (0,0) {Advertisement};
                 \node at (-1.8,0.1) {\Large \textbf{$\vdots$}};
+                \node (dots) at (3.7,0.9) {\Large \textbf{$\dots$}};
 
                 % Arrows
                 \draw[arrow] (needs_met.north) node[above, fill=bg, yshift=4pt, xshift=-15pt] {0.5} to [in=180, out=90, looseness=3] (needs_met.west);
@@ -367,19 +434,22 @@
 
                 \draw[thick, color=CadetBlue] (e1) to[bend left=30] (e2);
                 \draw[thick, color=YellowOrange] (e3) to[bend left=40] (e4);
+
+                \draw[arrow] (dots) -- (product_view);
+                \draw[arrow] (0,2.7) -- (0,2.35);
             \end{tikzpicture}}
     \end{figure}
 \end{frame}
 
-\begin{frame}{Formalize nondeterminism}
+\begin{frame}{Formalize nondeterminism -- Markov Decision Processes}
     % formal definition of a MDP
     \begin{itemize}
         \item \textbf{Set of states} $$S = \{\text{Needs\_met}, \text{Advertisement}, \text{Competitor}, \:\dots\}$$
         \item \textbf{Initial state} $$s_\text{start} = \text{Needs\_met}$$
         \item \textbf{Transition probability function} \\[0.5em]
-               $T : S \rightarrow 2^{\text{Dist}(S)}$ \\
-                \hspace{2em} $\begin{aligned}T(\text{Product\_view}):=\{&\textcolor{CadetBlue}{\{Advertisement\mapsto 0.7,Competitor\mapsto 0.3\}},\\
-                &\textcolor{YellowOrange}{\{Checkout\mapsto 0.7,Competitor\mapsto 0.3\}}\}\end{aligned}$
+              $T : S \rightarrow 2^{\text{Dist}(S)}$ \\
+              \hspace{2em} $\begin{aligned}T(\text{Product\_view}):=\{ & \textcolor{CadetBlue}{\{Advertisement\mapsto 0.7,Competitor\mapsto 0.3\}}, \\
+                                           & \textcolor{YellowOrange}{\{Checkout\mapsto 0.7,Competitor\mapsto 0.3\}}\}\end{aligned}$
     \end{itemize}
 \end{frame}
 
@@ -387,9 +457,9 @@
     \begin{tabular}{c|c|c}
                                   & \textbf{Discrete time} & \textbf{Continuous time} \\
         \hline
-        \textbf{Deterministic}    & DTMC                   & CTMC                    \\
+        \textbf{Deterministic}    & DTMC                   & CTMC                     \\
         \hline
-        \textbf{Nondeterministic} & MDP                    &                       \\
+        \textbf{Nondeterministic} & MDP                    & CTMDP                    \\
     \end{tabular}
 \end{frame}
 
@@ -432,7 +502,7 @@
                                     ([xshift=0pt]path picture bounding box.north);
                                 }
                         },
-                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                    lab/.style={font=\small, fill=bg, inner sep=1pt}
                 ]
 
                 % ---------------- BLUE CHAIN ----------------
@@ -501,7 +571,7 @@
                                     ([xshift=0pt]path picture bounding box.north);
                                 }
                         },
-                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                    lab/.style={font=\small, fill=bg, inner sep=1pt}
                 ]
 
                 % ---------------- TOP CHAIN ----------------
@@ -616,7 +686,7 @@
                                     ([xshift=0pt]path picture bounding box.north);
                                 }
                         },
-                    lab/.style={font=\small, fill=white, inner sep=1pt}
+                    lab/.style={font=\small, fill=bg, inner sep=1pt}
                 ]
 
                 % ---------------- BLUE CHAIN ----------------
