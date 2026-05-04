@@ -1959,20 +1959,6 @@ Das, S. and Sharma, A., 2023 \\
 
 %------------------------------------------------
 
-\begin{frame}{Conclusion}
-
-\begin{itemize}
-    \item Commonalities between different problem domains
-    \item Considerable breadth and diversity to the set of applications
-    \item Ease of rigorous modelling for stochastic systems
-    \item Logical formalism for expressing quantitative properties allows going
-beyond classical notion of correctness typically used in formal verification
-    \item Continually evolving tools and possible future domains of application
-\end{itemize}
-
-
-\end{frame}
-
 \begin{frame}{PRISM: Practical Demo}
     We will now walk through two concrete PRISM models:
     \begin{enumerate}
@@ -1997,7 +1983,7 @@ beyond classical notion of correctness typically used in formal verification
     \begin{semiverbatim}
 dtmc
 module protokol
-  s       : [0..2] init 0; \textit{// 0=waiting, 1=delivered, 2=failure}
+  s       : [0..2] init 0; 
   retries : [0..3] init 0;
 
   [] s=0 & retries<3 ->
@@ -2017,7 +2003,8 @@ label "failure"   = s=2;
 
     \vspace{0.5em}
 
-    \begin{tabular}{lll}
+    \small
+    \begin{tabular}{p{5cm}p{3.8cm}l}
         \toprule
         \textbf{Property} & \textbf{Question} & \textbf{Result} \\
         \midrule
@@ -2062,7 +2049,8 @@ label "thriving"   = s=1;
 
     \vspace{0.5em}
 
-    \begin{tabular}{lll}
+    \small
+    \begin{tabular}{p{5cm}p{4cm}l}
         \toprule
         \textbf{Property} & \textbf{Question} & \textbf{Result} \\
         \midrule
@@ -2077,6 +2065,20 @@ label "thriving"   = s=1;
 
     The computed \textbf{optimal policy}: organise a tournament when struggling,
     do nothing when thriving — consistent with the analytical result from value iteration.
+\end{frame}
+
+\begin{frame}{Conclusion}
+
+\begin{itemize}
+    \item Commonalities between different problem domains
+    \item Considerable breadth and diversity to the set of applications
+    \item Ease of rigorous modelling for stochastic systems
+    \item Logical formalism for expressing quantitative properties allows going
+beyond classical notion of correctness typically used in formal verification
+    \item Continually evolving tools and possible future domains of application
+\end{itemize}
+
+
 \end{frame}
 
 \end{document}
