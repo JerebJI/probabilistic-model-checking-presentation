@@ -1575,7 +1575,7 @@
 
 %------------------------------------------------
 
-% Probabilistic model checking applications
+%Probabilistic model checking applications
 
 %------------------------------------------------
 
@@ -1584,32 +1584,27 @@
 is the most widely used tool in the field that supports various types of models, including:
 \begin{itemize}
     \item Discrete-Time Markov Chains (DTMCs)
-    \item Markov Decision Processes (MDPs)
+    \item Markov Decision Processes (MDPs)  
     \item Continuous-Time Markov Chains (CTMCs)
     \item Probabilistic Timed Automata (PTAs)
 \end{itemize}
 \end{frame}
 \begin{frame}
-    Its primary strength lies in its use of symbolic data structures,
+    \begin{itemize}
+        \item     Its primary strength lies in its use of symbolic data structures,
     specifically Binary Decision Diagrams (BDDs) and Multi-Terminal Binary
     Decision Diagrams (MTBDDs).
     These structures allow PRISM to represent and analyze models
-    with billions of states by exploiting the structural regularity
+    with billions of states by exploiting the structural regularity 
     of the system.
-\end{frame}
-
-\begin{frame}
-    PRISM includes several analysis engines:
-    \begin{itemize}
-        \item Symbolic Engine: Uses MTBDDs for both representation and numerical solution.
-        \item  Explicit Engine: Uses sparse matrices and is often faster for models with less regularity.
-        \item Hybrid Engine: Combines the memory efficiency of MTBDDs with the speed of sparse matrices.
-        \item Simulator: Supports Statistical Model Checking (SMC), which uses Monte Carlo simulation
-        to estimate probabilities when the state space is too large for exhaustive analysis.
+    \item  PRISM-games extends its capabilities to stochastic multi-player games (systems with multiple agents)
     \end{itemize}
 
-    PRISM-games extends its capabilities to stochastic multi-player games (systems with multiple agents)
+
+    
+   
 \end{frame}
+
 
 \begin{frame}{Diverse Application Domains}
     The versatility of probabilistic model checking has led to its adoption across
@@ -1621,7 +1616,7 @@ is the most widely used tool in the field that supports various types of models,
         \item Autonomous systems and robotics
         \item Safety-critical systems
         \item Biology and human behavior
-        \item AI and self-adaptive systems
+        \item AI and self-adaptive systems 
         \item Many more...
     \end{itemize}
 \end{frame}
@@ -1629,7 +1624,7 @@ is the most widely used tool in the field that supports various types of models,
 \begin{frame}
 In the next few slides, we will briefly explore
 some of these application areas and the types of questions that probabilistic model
-checking can help answer. So many applications that we cannot cover them all, but we will give you a
+checking can help answer. There are so many applications that we cannot cover them all, but we will give you a 
 flavour of the diversity of applications and the types of questions that can be answered.
 
 \end{frame}
@@ -1651,7 +1646,7 @@ Kwiatkowska et al., 2025 \\
 % Recommended for further reading if you are interested in more details and references to specific
 % papers in each area.
 
-
+    
 \end{frame}
 
 \begin{frame}{PRISM Case Studies}
@@ -1669,7 +1664,7 @@ Kwiatkowska et al., 2025 \\
 Recommended for further reading if you are interested in more details and references to specific
 papers in each area.
 
-
+    
 \end{frame}
 
 
@@ -1679,9 +1674,9 @@ papers in each area.
     % \end{center}
     %     \column{0.5\textwidth}
     % \textbf{Description:}
-
-    % This figure shows the main architecture of the model.
-    % The system processes input data and produces predictions
+    
+    % This figure shows the main architecture of the model. 
+    % The system processes input data and produces predictions 
     % using a multi-stage pipeline.
 
     % \vspace{1em}
@@ -1690,9 +1685,9 @@ papers in each area.
     \includegraphics[width=\textwidth]{./Images/Categories of application oriented publications.png}
     \end{center}
     % \textbf{Description:}
-
-    % This figure shows the main architecture of the model.
-    % The system processes input data and produces predictions
+    
+    % This figure shows the main architecture of the model. 
+    % The system processes input data and produces predictions 
     % using a multi-stage pipeline.
 
     \begin{center}
@@ -1712,7 +1707,7 @@ papers in each area.
     \item A fruitful initial area of study for probabilistic model checking
 \end{itemize}
 
-\textbf{Problem:} Symmetry breaking between concurrent
+\textbf{Problem:} Symmetry breaking between concurrent 
 processes - establishing correct termination and fairness
 
 
@@ -1724,7 +1719,7 @@ processes - establishing correct termination and fairness
 \item Fault tolerance
 \end{itemize}
 Generally uses MDPs since they are ideally suited to model the mixture of stochasticity and concurrency,
-sometimes DTMCs are also used.
+sometimes DTMCs are also used.  
 
 Scalability of verification techniques was enhanced with the development of symbolic methods.
 
@@ -1750,14 +1745,14 @@ Scalability of verification techniques was enhanced with the development of symb
     \item In wireless we also model underlying medium's unreliability (message delays or losses)
 \end{itemize}
 
-\textbf{Important examples:}
+\textbf{Examples:}
 \begin{itemize}
-\item Blueooth device discovery (multiple DTMC models with $\geq 10^{10}$ states)
-\item CSMA/CA (Carrier Sense Multiple Access with Collision Avoidance)
-\item FireWire and Zigbee protocols (use of PTAs)
+\item Bluetooth protocol (multiple DTMC models with $\geq 10^{10}$ states)
+\item CSMA/CA (Carrier Sense Multiple Access with Collision Avoidance), FireWire and Zigbee protocols (use of PTAs)
+\item Other wireless protocols, vehicular networks, and wireless sensor networks
 \end{itemize}
 
-Modern exaples include wireless protocols , vehicular networks and wireless sensor networks
+PTA models are useful for quantifying the reliability or timeliness of transmissions
 
 
 % \textbf{Problem:}
@@ -1805,8 +1800,29 @@ and an adversary. $\Rightarrow$ \textbf{Generalized by stochastic games}
 % }
 
 Trade-off between security and performance (e.g. more randomisation can increase security
-but also increase latency) $\Rightarrow$ The expressivity of probabilistic temporal logics allows us to
+but also increase latency) $\Rightarrow$ The expressivity of probabilistic temporal logics allows us to 
 capture and analyze these trade-offs (e.g. relation between error and transmission cost).
+\end{frame}
+% %------------------------------------------------
+
+\begin{frame}{Safety-Critical Systems and Hardware}
+Used to rigorously quantify the
+likelihood with which high-risk failures or malfunctions could occur
+\begin{itemize}
+ \item Assessment of safety integrity levels (SILs), which specify acceptable
+probabilities or rates of failure
+\item Modelled as DTMCs or CTMCs (for quantifying failure rates over time)
+\item Safety specifications typically amount to relatively simple PCTL or CSL
+queries
+\end{itemize}
+
+Early exmaple: integration into the failure mode and effects analysis of an airbag system.
+Also used in: 
+\begin{itemize}
+    \item Railway infrastructure (using {\textit{Fault Tree Analysis}})
+    \item Vehicle guidance systems
+    \item Medical (pacemaker design) and aerospace domain (satellite systems and spacecraft design)
+\end{itemize}
 \end{frame}
 
 %------------------------------------------------
@@ -1815,8 +1831,8 @@ capture and analyze these trade-offs (e.g. relation between error and transmissi
 CTMCs are useful for modeling stochastic dynamics of biological processes:
 
 \begin{itemize}
-    \item Cellular processes (protein to protein interactions, gene expression, chemical reactions)
-    \item Population dynamics (epidemic disease spreading, population growth)
+\item Cellular processes (protein to protein interactions, gene expression, chemical reactions)
+\item Population dynamics (epidemic disease spreading, population growth)
 \end{itemize}
 
 Questions like: {\textit{ “what is the expected number of molecules of protein X after 5 minutes?” or
@@ -1853,33 +1869,12 @@ the development of {\it{statistical model checking}}.
 
 
 
-% %------------------------------------------------
-
-\begin{frame}{Safety-Critical Systems}
-Used to rigorously quantify the
-likelihood with which high-risk failures or malfunctions could occur
-\begin{itemize}
-    \item Assessment of safety integrity levels (SILs), which specify acceptable
-probabilities or rates of failure
-    \item Modelled as DTMCs or CTMSCs (for quantifying failure rates over time)
-    \item Safety specifications typically amount to relatively simple PCTL or CSL
-queries
-\end{itemize}
-
-Early exmaple: integration into the failure mode and effects analysis of an airbag system.
-Also used in:
-\begin{itemize}
-    \item Railway infrastructure (using {\textit{Fault Tree Analysis}})
-    \item Vehicle guidance systems
-    \item Medical (pacemaker design) and aerospace domain (satellite systems and spacecraft design)
-\end{itemize}
-\end{frame}
 
 %------------------------------------------------
 \begin{frame}{Autonomous Systems \& Robotics}
 \begin{itemize}
-    \item Clear trend in recent years
-    \item Robots operate in uncertain environments ( also interaction with other agents) with imperfect
+    \item Trend in recent years
+    \item Robots operate in uncertain environments ( also interaction with other agents) with imperfect 
     sensors and actuators
     \item Guarantees of policies (safety and reliability) are crucial
 \end{itemize}
@@ -1891,8 +1886,7 @@ execution time) or analysis of the corresponding Pareto front.
 
 
 \begin{itemize}
-    \item Use in AUVs, UAVs, self-driving cars, multi-robot systems
-    \item Highlights challenges
+\item Use in AUVs, UAVs, self-driving cars, multi-robot systems
 \end{itemize}
 
 
@@ -1920,15 +1914,15 @@ playing style of soccer teams}
 {\tiny{
 Clijmans, J. et al., 2023 \\
 %\url{hhttps://www.springerprofessional.de/en/looking-beyond-the-past-analyzing-the-intrinsic-playing-style-of/24638806}
-}}
-
+}} 
+ 
 \begin{figure}
     \centering
     \includegraphics[width=0.85\textwidth]{./Images/Football.png}
 \end{figure}
 
 \begin{enumerate}
-    \item Learn an MDP model from event stream data
+    \item Learn an MDP model from event stream data 
     \item Apply probabilistic model checking with LTL to express outcomes of interest
     \item Use the results to inform tactical decisions
 \end{enumerate}
@@ -1941,8 +1935,8 @@ in the supreme court}
 {\tiny{
 Das, S. and Sharma, A., 2023 \\
 %\url{https://arxiv.org/abs/2311.05177}
-}}
-
+}} 
+ 
 \begin{figure}
     \centering
     \includegraphics[width=0.9\textwidth]{./Images/Supreme court.png}
@@ -1956,19 +1950,24 @@ Das, S. and Sharma, A., 2023 \\
 
 \end{frame}
 
+
+%------------------------------------------------
+
 \begin{frame}{Conclusion}
 
 \begin{itemize}
-    \item Commonalities between different problem domains
-    \item Considerable breadth and diversity to the set of applications
-    \item Ease of rigorous modelling for stochastic systems
-    \item Logical formalism for expressing quantitative properties allows going
+\item   Ease of rigorous modelling for stochastic systems
+\item   Considerable breadth and diversity of the set of applications
+\item   Commonalities between different problem domains
+\item  Logical formalism for expressing quantitative properties allows going 
 beyond classical notion of correctness typically used in formal verification
-    \item Continually evolving tools and possible future domains of application
+\item  Continually evolving tools and possible future domains of application 
 \end{itemize}
 
 
 \end{frame}
+
+%------------------------------------------------
 
 
 %------------------------------------------------
